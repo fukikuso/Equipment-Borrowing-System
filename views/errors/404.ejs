@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body>
+  <div class="login-panel" style="min-height:100vh">
+    <div class="login-card" style="text-align:center;max-width:440px">
+      <div class="ic-badge" style="background:var(--neutral-bg);color:var(--text-muted)"><i data-lucide="compass"></i></div>
+      <h2>Page Not Found</h2>
+      <p class="subtitle">The page you're looking for doesn't exist or may have been moved.</p>
+      <a href="<%= typeof currentUser !== 'undefined' && currentUser ? (currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard') : '/login' %>" class="btn btn-primary btn-block">
+        <i data-lucide="home"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

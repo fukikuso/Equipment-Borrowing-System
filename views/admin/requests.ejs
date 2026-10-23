@@ -1,0 +1,113 @@
+<%- include('../partials/app-open', {sidebarType: 'admin', hideSearch: true}) %>
+
+<div class="page-header">
+  <h1>Request Management</h1>
+  <p>Review, approve, and manage equipment borrowing requests.</p>
+</div>
+
+<div class="card mb-16">
+  <form method="GET" action="/admin/requests" class="flex gap-10" style="flex-wrap:wrap;">
+    <input type="text" name="q" placeholder="Search request ID, borrower, equipment, or equipment status..." value="<%= filters.q %>" style="flex:1;min-width:220px;">
+    <select name="status" aria-label="Request status" style="max-width:200px;" onchange="this.form.submit()">
+      <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Statuses</option>
+      <option value="submitted" <%= filters.status === 'submitted' ? 'selected' : '' %>>Submitted</option>
+      <option value="under_review" <%= filters.status === 'under_review' ? 'selected' : '' %>>Under Review</option>
+      <option value="approved" <%= filters.status === 'approved' ? 'selected' : '' %>>Approved</option>
+      <option value="ready_for_pickup" <%= filters.status === 'ready_for_pickup' ? 'selected' : '' %>>Ready for Pickup</option>
+      <option value="borrowed" <%= filters.status === 'borrowed' ? 'selected' : '' %>>Borrowed</option>
+      <option value="rejected" <%= filters.status === 'rejected' ? 'selected' : '' %>>Rejected</option>
+      <option value="completed" <%= filters.status === 'completed' ? 'selected' : '' %>>Completed</option>
+    </select>
+    <select name="equipmentStatus" aria-label="Equipment status" style="max-width:220px;" onchange="this.form.submit()">
+      <option value="all" <%= filters.equipmentStatus === 'all' ? 'selected' : '' %>>All Equipment Statuses</option>
+      <option value="Operational" <%= filters.equipmentStatus === 'Operational' ? 'selected' : '' %>>Operational</option>
+      <option value="Scheduled Maintenance" <%= filters.equipmentStatus === 'Scheduled Maintenance' ? 'selected' : '' %>>Scheduled Maintenance</option>
+      <option value="Under Maintenance" <%= filters.equipmentStatus === 'Under Maintenance' ? 'selected' : '' %>>Under Maintenance</option>
+      <option value="Repair Needed" <%= filters.equipmentStatus === 'Repair Needed' ? 'selected' : '' %>>Repair Needed</option>
+      <option value="Retired" <%= filters.equipmentStatus === 'Retired' ? 'selected' : '' %>>Retired</option>
+      <option value="Archived" <%= filters.equipmentStatus === 'Archived' ? 'selected' : '' %>>Archived</option>
+    </select>
+    <button type="submit" class="btn btn-primary"><i data-lucide="search"></i> Search</button>
+  </form>
+</div>
+
+<div class="card card-flush">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Request ID</th><th>Borrower</th><th>Equipment</th><th>Equipment Status</th><th>Purpose</th><th>Borrow Date</th><th>Return Date</th><th>Request Status</th><th>Submitted</th><th>Action</th></tr></thead>
+      <tbody>
+        <% if (rows.length === 0) { %><tr><td colspan="10"><div class="empty-state"><i data-lucide="inbox"></i><h3>No requests found</h3></div></td></tr><% } %>
+        <% rows.forEach(function(r) { %>
+        <tr>
+          <td class="font-semibold"><%= r.request_code %></td>
+          <td><%= r.borrower_name %><br><span class="text-xs text-muted"><%= r.id_number %></span></td>
+          <td><%= r.equipment_name %><br><span class="text-xs text-muted"><%= r.equipment_code %></span></td>
+          <td><span class="badge <%= h.badgeClass(r.equipment_status) %>"><%= r.equipment_status %></span></td>
+          <td class="text-sm" style="max-width:160px;"><%= r.purpose %></td>
+          <td class="text-sm"><%= h.formatDate(r.date_needed) %></td>
+          <td class="text-sm"><%= h.formatDate(r.expected_return_date) %></td>
+          <td><span class="badge <%= h.badgeClass(r.status) %>"><%= h.statusLabel(r.status) %></span></td>
+          <td class="text-xs text-muted"><%= h.formatDate(r.created_at) %></td>
+          <td>
+            <div class="flex gap-6">
+              <a href="/admin/requests/<%= r.id %>" class="btn btn-ghost btn-sm" title="View"><i data-lucide="eye"></i></a>
+              <% if (['submitted','under_review'].includes(r.status)) { %>
+                <button class="btn btn-ghost btn-sm" style="color:var(--success)" title="Approve" onclick="openApprove(<%= r.id %>, '<%= r.request_code %>')"><i data-lucide="check"></i></button>
+                <button class="btn btn-ghost btn-sm" style="color:var(--danger)" title="Reject" onclick="openReject(<%= r.id %>, '<%= r.request_code %>')"><i data-lucide="x"></i></button>
+              <% } %>
+            </div>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal-backdrop" id="approveModal">
+  <div class="modal-box">
+    <h3>Approve Equipment Request?</h3>
+    <p id="approveText">This will reserve the equipment and notify the borrower that it's ready for pickup.</p>
+    <form id="approveForm" method="POST">
+      <input type="hidden" name="redirectTo" value="/admin/requests">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> Approve</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-backdrop" id="rejectModal">
+  <div class="modal-box">
+    <h3>Reject Equipment Request?</h3>
+    <p id="rejectText">Please provide a reason. This will be shared with the borrower.</p>
+    <form id="rejectForm" method="POST">
+      <input type="hidden" name="redirectTo" value="/admin/requests">
+      <div class="form-group mt-12">
+        <textarea name="reason" placeholder="Reason for rejection..." required></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-danger"><i data-lucide="x"></i> Reject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openApprove(id, code) {
+    document.getElementById('approveText').textContent = `This will reserve the equipment for ${code} and notify the borrower that it's ready for pickup.`;
+    document.getElementById('approveForm').action = `/admin/requests/${id}/approve`;
+    document.getElementById('approveModal').classList.add('open');
+  }
+  function openReject(id, code) {
+    document.getElementById('rejectText').textContent = `Please provide a reason for rejecting ${code}. This will be shared with the borrower.`;
+    document.getElementById('rejectForm').action = `/admin/requests/${id}/reject`;
+    document.getElementById('rejectModal').classList.add('open');
+  }
+</script>
+
+<%- include('../partials/app-close') %>

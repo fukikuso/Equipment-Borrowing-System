@@ -1,0 +1,150 @@
+<%- include('../partials/app-open', {sidebarType: ['admin', 'staff'].includes(currentUser.role) ? 'admin' : 'student'}) %>
+
+<div class="breadcrumb"><a href="<%= ['admin', 'staff'].includes(currentUser.role) ? '/admin/dashboard' : '/dashboard' %>">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <a href="/equipment">Equipment Catalog</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span><%= equipment.name %> (<%= equipment.equipment_code %>)</span></div>
+
+<a href="/equipment" class="link-back" id="backToCatalogLink" aria-label="Back to equipment catalog"><i data-lucide="arrow-left"></i></a>
+<div class="page-header flex items-center gap-12">
+  <h1 style="margin:0"><%= equipment.name %> (<%= equipment.equipment_code %>)</h1>
+  <span class="badge <%= equipment.maintenance_status !== 'Operational' ? 'badge-danger' : (equipment.quantity_available > 0 ? 'badge-success' : 'badge-warning') %>">
+    <%= equipment.maintenance_status !== 'Operational' ? equipment.maintenance_status : (equipment.quantity_available > 0 ? 'Available' : 'Fully Borrowed') %>
+  </span>
+</div>
+<p class="text-muted mb-24" style="margin-top:-14px;"><%= equipment.description || 'No description provided.' %></p>
+
+<div class="grid" style="grid-template-columns: 2fr 1fr; align-items:start;">
+  <div>
+    <div class="card mb-24">
+      <% if (equipment.catalogImage) { %>
+        <div style="width:100%;height:300px;border-radius:12px;overflow:hidden;background:#f3f4f6;margin-bottom:20px;display:flex;align-items:center;justify-content:center;">
+          <img src="<%= equipment.catalogImage %>" alt="<%= equipment.name %>" style="width:100%;height:100%;object-fit:cover;display:block;">
+        </div>
+      <% } else { %>
+      <div style="height:260px;background:var(--teal-light);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <i data-lucide="box" style="width:70px;height:70px;color:var(--teal);opacity:0.5"></i>
+      </div>
+      <% } %>
+
+      <h3 class="mb-12">Equipment Information</h3>
+      <div class="grid grid-2 text-sm">
+        <div class="mb-12"><span class="text-muted">Equipment ID</span><br><strong><%= equipment.equipment_code %></strong></div>
+        <div class="mb-12"><span class="text-muted">Category</span><br><strong><%= equipment.category_name || '—' %></strong></div>
+        <div class="mb-12"><span class="text-muted">Brand / Model</span><br><strong><%= equipment.brand_model || '—' %></strong></div>
+        <div class="mb-12"><span class="text-muted">Condition</span><br><span class="badge <%= h.badgeClass(equipment.condition_status) %>"><%= equipment.condition_status %></span></div>
+        <div class="mb-12"><span class="text-muted">Location</span><br><strong><i data-lucide="map-pin" style="width:13px;height:13px"></i> <%= equipment.location %></strong></div>
+        <div class="mb-12"><span class="text-muted">Quantity</span><br><strong><%= equipment.quantity_available %> available / <%= equipment.quantity_total %> total</strong></div>
+        <div class="mb-12"><span class="text-muted">Current Borrower</span><br><strong><%= currentBorrower ? currentBorrower.full_name : 'None' %></strong></div>
+        <div class="mb-12"><span class="text-muted">Maintenance Status</span><br><span class="badge <%= h.badgeClass(equipment.maintenance_status) %>"><%= equipment.maintenance_status %></span></div>
+      </div>
+
+      <div class="divider"></div>
+      <h3 class="mb-12">Specifications</h3>
+      <% let specs = {}; try { specs = typeof equipment.specifications === 'string' ? JSON.parse(equipment.specifications) : (equipment.specifications || {}); } catch(e) { specs = {}; } %>
+      <% if (Object.keys(specs).length === 0) { %>
+        <p class="text-muted text-sm">No specifications listed for this item.</p>
+      <% } else { %>
+        <div class="grid grid-2 text-sm">
+          <% Object.keys(specs).forEach(function(k) { %>
+            <div class="mb-12"><span class="text-muted"><%= k %></span><br><strong><%= specs[k] %></strong></div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <% if (equipment.borrowing_rules) { %>
+        <div class="divider"></div>
+        <h3 class="mb-12">Borrowing Rules</h3>
+        <p class="text-sm text-muted"><%= equipment.borrowing_rules %></p>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <h3 class="mb-12">Borrowing History</h3>
+      <% if (history.length === 0) { %>
+        <p class="text-muted text-sm">No borrowing history yet for this item.</p>
+      <% } else { %>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date Borrowed</th><th>Date Returned</th><th>Borrower</th><th>Status</th></tr></thead>
+            <tbody>
+              <% history.forEach(function(r) { %>
+              <tr>
+                <td><%= h.formatDate(r.borrow_date) %></td>
+                <td><%= r.return_date ? h.formatDate(r.return_date) : '—' %></td>
+                <td><%= isAdmin ? r.full_name + (r.program ? ' (' + r.program + ')' : '') : '—' %></td>
+                <td><span class="badge <%= h.badgeClass(r.status) %>"><%= h.statusLabel(r.status) %></span></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div>
+    <div class="card mb-16">
+      <% if (currentUser.role === 'staff') { %>
+        <a href="/qr-scanner" class="btn btn-primary btn-block"><i data-lucide="qr-code"></i> Scan Pickup / Return QR</a>
+      <% } else if (currentUser.role !== 'admin' && equipment.quantity_available > 0 && equipment.maintenance_status === 'Operational') { %>
+        <a href="/request-equipment?equipment=<%= equipment.id %>" class="btn btn-primary btn-block"><i data-lucide="calendar-plus"></i> Request This Equipment</a>
+      <% } else if (currentUser.role !== 'admin') { %>
+        <button class="btn btn-primary btn-block" disabled><i data-lucide="calendar-plus"></i> Request This Equipment</button>
+      <% } %>
+    </div>
+
+    <div class="card mb-16">
+      <div class="flex justify-between items-center mb-12">
+        <h3 style="font-size:15px">Real-Time Availability</h3>
+        <span class="badge <%= equipment.quantity_available > 0 ? 'badge-success' : 'badge-warning' %>"><%= equipment.quantity_available > 0 ? 'Available' : 'Unavailable' %></span>
+      </div>
+      <div class="grid grid-2 text-center">
+        <div><div class="stat-value" style="font-size:22px"><%= equipment.quantity_available %></div><div class="stat-label">Available</div></div>
+        <div><div class="stat-value" style="font-size:22px"><%= equipment.quantity_total - equipment.quantity_available %></div><div class="stat-label">Borrowed</div></div>
+      </div>
+    </div>
+
+    <div class="card mb-16">
+      <h3 style="font-size:15px" class="mb-12"><i data-lucide="map-pin" style="width:15px;height:15px"></i> Location</h3>
+      <p class="text-sm"><%= equipment.location %></p>
+    </div>
+
+    <% if (alternatives.length > 0) { %>
+    <div class="card">
+      <h3 style="font-size:15px" class="mb-12"><i data-lucide="sparkles" style="width:15px;height:15px;color:var(--amber-dark)"></i> Similar / Alternative Equipment</h3>
+      <% alternatives.forEach(function(a) { %>
+        <a href="/equipment/<%= a.id %>" class="flex items-center justify-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
+          <div class="flex items-center gap-10">
+            <% if (a.catalogImage) { %>
+              <img src="<%= a.catalogImage %>" alt="<%= a.name %>" style="width:34px;height:34px;border-radius:9px;object-fit:cover;display:block;">
+            <% } else { %>
+              <div class="stat-icon teal" style="width:34px;height:34px;border-radius:9px;"><i data-lucide="box" style="width:16px;height:16px"></i></div>
+            <% } %>
+            <div>
+              <div class="text-sm font-semibold"><%= a.name %></div>
+              <div class="text-xs text-muted"><%= a.equipment_code %></div>
+            </div>
+          </div>
+          <span class="badge badge-success">Available</span>
+        </a>
+      <% }); %>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const backLink = document.getElementById('backToCatalogLink');
+    if (!backLink) return;
+
+    backLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      const referrer = document.referrer;
+      const targetUrl = referrer && referrer.startsWith(window.location.origin) && referrer.includes('/equipment')
+        ? referrer
+        : '/equipment';
+      window.location.href = targetUrl;
+    });
+  })();
+</script>
+
+<%- include('../partials/app-close') %>

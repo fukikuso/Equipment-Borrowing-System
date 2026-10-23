@@ -1,0 +1,83 @@
+<%- include('../partials/app-open', {sidebarType: 'admin', hideSearch: true}) %>
+
+<div class="page-header">
+  <h1><%= currentUser.role === 'staff' ? 'Staff Dashboard' : 'Admin Dashboard' %></h1>
+  <p>Overview of equipment, requests, and borrowing activity across CSPC.</p>
+</div>
+
+<div class="grid grid-4 mb-24">
+  <div class="card stat-card"><div class="stat-icon teal"><i data-lucide="boxes"></i></div><div><div class="stat-value"><%= stats.total_equipment %></div><div class="stat-label">Total Equipment</div></div></div>
+  <div class="card stat-card"><div class="stat-icon success"><i data-lucide="check-circle"></i></div><div><div class="stat-value"><%= stats.available %></div><div class="stat-label">Available</div></div></div>
+  <div class="card stat-card"><div class="stat-icon info"><i data-lucide="package-check"></i></div><div><div class="stat-value"><%= stats.borrowed %></div><div class="stat-label">Borrowed</div></div></div>
+  <div class="card stat-card"><div class="stat-icon danger"><i data-lucide="alert-triangle"></i></div><div><div class="stat-value"><%= stats.overdue %></div><div class="stat-label">Overdue</div></div></div>
+  <div class="card stat-card"><div class="stat-icon amber"><i data-lucide="clock"></i></div><div><div class="stat-value"><%= stats.pending_requests %></div><div class="stat-label">Pending Requests</div></div></div>
+  <div class="card stat-card"><div class="stat-icon danger"><i data-lucide="wrench"></i></div><div><div class="stat-value"><%= stats.under_maintenance %></div><div class="stat-label">Under Maintenance</div></div></div>
+</div>
+
+<div class="grid grid-2 mb-24" style="align-items:stretch;">
+  <div class="card">
+    <h3 class="mb-12">Borrowing Activity by Month</h3>
+    <canvas id="monthlyChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <h3 class="mb-12">Most Borrowed Equipment</h3>
+    <canvas id="mostBorrowedChart" height="180"></canvas>
+  </div>
+</div>
+
+<div class="grid grid-2" style="align-items:start;">
+  <div class="card">
+    <h3 class="mb-12">Equipment by Category</h3>
+    <canvas id="categoryChart" height="200"></canvas>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-12">Overdue Transactions</h3>
+    <% if (overdueList.length === 0) { %>
+      <div class="empty-state" style="padding:24px 10px"><i data-lucide="check-circle-2"></i><h3>No overdue items</h3></div>
+    <% } %>
+    <% overdueList.forEach(function(o) { %>
+      <div class="flex justify-between text-sm mb-12" style="padding-bottom:10px;border-bottom:1px solid var(--border)">
+        <div><strong><%= o.equipment_name %></strong><br><span class="text-xs text-muted"><%= o.borrower_name %> · <%= o.request_code %></span></div>
+        <span class="badge badge-danger"><%= h.formatDate(o.due_date) %></span>
+      </div>
+    <% }); %>
+    <a href="/admin/returns" class="pill-link text-xs">Go to Returns <i data-lucide="arrow-right" style="width:13px;height:13px"></i></a>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const tealColor = '#174A8B';
+  const amberColor = '#F59E0B';
+
+  new Chart(document.getElementById('monthlyChart'), {
+    type: 'line',
+    data: {
+      labels: <%- JSON.stringify(monthly.map(m => m.month)) %>,
+      datasets: [{ label: 'Borrowings', data: <%- JSON.stringify(monthly.map(m => m.total)) %>, borderColor: tealColor, backgroundColor: 'rgba(23,74,139,0.1)', fill: true, tension: 0.35 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  new Chart(document.getElementById('mostBorrowedChart'), {
+    type: 'bar',
+    data: {
+      labels: <%- JSON.stringify(mostBorrowed.map(m => m.name)) %>,
+      datasets: [{ label: 'Times Borrowed', data: <%- JSON.stringify(mostBorrowed.map(m => m.total)) %>, backgroundColor: amberColor, borderRadius: 6 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: <%- JSON.stringify(byCategory.map(c => c.name)) %>,
+      datasets: [{ data: <%- JSON.stringify(byCategory.map(c => c.total)) %>, backgroundColor: ['#174A8B','#F59E0B','#2563EB','#16A34A','#DC2626','#6B7280','#94A3B8','#B45309','#0EA5E9'] }]
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+  });
+</script>
+
+<%- include('../partials/app-close') %>

@@ -1,0 +1,67 @@
+<%- include('../partials/app-open', {sidebarType: 'admin'}) %>
+
+<a href="/admin/users" class="link-back"><i data-lucide="arrow-left"></i> Back to Users</a>
+
+<div class="grid" style="grid-template-columns: 1fr 1.6fr; align-items:start;">
+  <div class="card" style="text-align:center;">
+    <img src="<%= targetUser.photo || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(targetUser.full_name) + '&backgroundColor=0D6B74' %>" style="width:88px;height:88px;border-radius:50%;object-fit:cover;margin-bottom:12px;">
+    <h3><%= targetUser.full_name %></h3>
+    <div class="text-sm text-muted"><%= targetUser.id_number %></div>
+    <span class="badge badge-info mt-8"><%= targetUser.role %></span>
+    <span class="badge <%= targetUser.account_status === 'active' ? 'badge-success' : 'badge-neutral' %> mt-8"><%= targetUser.account_status %></span>
+    <div class="divider"></div>
+    <form action="/admin/users/<%= targetUser.id %>/toggle-status" method="POST" onsubmit="return confirm('<%= targetUser.account_status === 'active' ? 'Deactivate' : 'Activate' %> this account?')">
+      <button class="btn <%= targetUser.account_status === 'active' ? 'btn-danger' : 'btn-primary' %> btn-block">
+        <i data-lucide="<%= targetUser.account_status === 'active' ? 'user-x' : 'user-check' %>"></i>
+        <%= targetUser.account_status === 'active' ? 'Deactivate Account' : 'Activate Account' %>
+      </button>
+    </form>
+  </div>
+
+  <div>
+    <div class="card mb-16">
+      <h3 class="mb-16">Edit User</h3>
+      <form action="/admin/users/<%= targetUser.id %>" method="POST">
+        <div class="grid grid-2">
+          <div class="form-group"><label>Full Name</label><input type="text" name="full_name" value="<%= targetUser.full_name %>" required></div>
+          <div class="form-group"><label>Email</label><input type="email" name="email" value="<%= targetUser.email || '' %>"></div>
+          <div class="form-group"><label>Department</label><input type="text" name="department" value="<%= targetUser.department || '' %>"></div>
+          <div class="form-group"><label>Program</label><input type="text" name="program" value="<%= targetUser.program || '' %>"></div>
+          <div class="form-group"><label>Contact Number</label><input type="tel" name="contact_number" value="<%= targetUser.contact_number || '' %>"></div>
+          <div class="form-group">
+            <label>Role</label>
+            <select name="role">
+              <% ['student','instructor','staff','admin'].forEach(function(r) { %>
+                <option value="<%= r %>" <%= targetUser.role === r ? 'selected' : '' %>><%= r.charAt(0).toUpperCase() + r.slice(1) %></option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary"><i data-lucide="save"></i> Save Changes</button>
+      </form>
+    </div>
+
+    <div class="card card-flush">
+      <div style="padding:20px 20px 0"><h3>Borrowing History</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Request ID</th><th>Equipment</th><th>Borrow Date</th><th>Return Date</th><th>Status</th></tr></thead>
+          <tbody>
+            <% if (history.length === 0) { %><tr><td colspan="5"><div class="empty-state"><i data-lucide="history"></i><h3>No history yet</h3></div></td></tr><% } %>
+            <% history.forEach(function(r) { %>
+            <tr>
+              <td class="font-semibold"><%= r.request_code %></td>
+              <td><%= r.equipment_name %></td>
+              <td class="text-sm"><%= r.borrow_date ? h.formatDate(r.borrow_date) : '—' %></td>
+              <td class="text-sm"><%= r.return_date ? h.formatDate(r.return_date) : '—' %></td>
+              <td><span class="badge <%= h.badgeClass(r.status) %>"><%= h.statusLabel(r.status) %></span></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

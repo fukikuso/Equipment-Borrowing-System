@@ -1,0 +1,197 @@
+<%- include('../partials/app-open', {sidebarType: 'student'}) %>
+
+<div class="breadcrumb"><a href="/dashboard">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>Request Equipment</span></div>
+<div class="page-header">
+  <h1>Request Equipment</h1>
+  <p>Complete the steps below to submit a borrowing request.</p>
+</div>
+
+<div class="card" style="max-width:840px;margin:0 auto;">
+  <div class="step-indicator" id="stepIndicator">
+    <div class="step active" data-step="1"><span class="num">1</span> Select Equipment</div>
+    <div class="sep"></div>
+    <div class="step" data-step="2"><span class="num">2</span> Borrowing Info</div>
+    <div class="sep"></div>
+    <div class="step" data-step="3"><span class="num">3</span> Additional Info</div>
+    <div class="sep"></div>
+    <div class="step" data-step="4"><span class="num">4</span> Review</div>
+  </div>
+
+  <form action="/request-equipment" method="POST" enctype="multipart/form-data" id="requestForm">
+
+    <!-- STEP 1: Select equipment -->
+    <div class="form-step active" data-step="1">
+      <div class="form-group">
+        <label>Select Equipment <span style="color:var(--danger)">*</span></label>
+        <select name="equipment_id" id="equipmentSelect" required onchange="onEquipmentChange()">
+          <option value="">Choose equipment...</option>
+          <% equipmentList.forEach(function(e) { %>
+            <option value="<%= e.id %>" data-max="<%= e.quantity_available %>" data-location="<%= e.location %>" data-category="<%= e.category_name %>"
+              <%= preselected && preselected === e.id ? 'selected' : '' %> <%= e.quantity_available <= 0 ? 'disabled' : '' %>>
+              <%= e.name %> (<%= e.equipment_code %>) — <%= e.quantity_available %> available
+            </option>
+          <% }); %>
+        </select>
+        <div class="form-hint">Only equipment with available units can be selected.</div>
+      </div>
+      <div id="equipInfoBox" class="card" style="display:none;background:var(--teal-light);border:none;">
+        <div class="text-sm"><strong id="eqName"></strong></div>
+        <div class="text-xs text-muted"><span id="eqLocation"></span> · <span id="eqCategory"></span></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Borrowing info -->
+    <div class="form-step" data-step="2">
+      <div class="form-group">
+        <label>Purpose <span style="color:var(--danger)">*</span></label>
+        <textarea name="purpose" placeholder="What will you use this equipment for?" required></textarea>
+      </div>
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label>Date Needed <span style="color:var(--danger)">*</span></label>
+          <input type="date" name="date_needed" required min="<%= new Date().toISOString().split('T')[0] %>">
+        </div>
+        <div class="form-group">
+          <label>Time Needed</label>
+          <input type="time" name="time_needed">
+        </div>
+        <div class="form-group">
+          <label>Expected Return Date <span style="color:var(--danger)">*</span></label>
+          <input type="date" name="expected_return_date" required min="<%= new Date().toISOString().split('T')[0] %>">
+        </div>
+        <div class="form-group">
+          <label>Expected Return Time</label>
+          <input type="time" name="expected_return_time">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Quantity <span style="color:var(--danger)">*</span></label>
+        <input type="number" name="quantity" id="quantityInput" value="1" min="1" required>
+        <div class="form-hint" id="qtyHint"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Additional info -->
+    <div class="form-step" data-step="3">
+      <div class="form-group">
+        <label>Activity / Event</label>
+        <input type="text" name="activity_event" placeholder="e.g. Research Project, Seminar, Capstone Defense">
+      </div>
+      <div class="form-group">
+        <label>Department / Program</label>
+        <input type="text" name="department_program" value="<%= currentUser.program || currentUser.department || '' %>" placeholder="e.g. Information Technology (BSIT)">
+      </div>
+      <div class="form-group">
+        <label>Supporting Document <span class="text-muted font-normal" style="font-weight:400">(optional)</span></label>
+        <input type="file" name="supporting_document">
+        <div class="form-hint">Attach an activity permit, endorsement letter, or similar document if applicable.</div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Review -->
+    <div class="form-step" data-step="4">
+      <div class="card mb-16" style="border-color:var(--border)">
+        <h3 class="mb-12" style="font-size:15px">Review Your Request</h3>
+        <div class="grid grid-2 text-sm" id="reviewBox">
+          <div class="mb-12"><span class="text-muted">Equipment</span><br><strong id="rv-equipment">—</strong></div>
+          <div class="mb-12"><span class="text-muted">Quantity</span><br><strong id="rv-quantity">—</strong></div>
+          <div class="mb-12"><span class="text-muted">Date Needed</span><br><strong id="rv-date-needed">—</strong></div>
+          <div class="mb-12"><span class="text-muted">Expected Return</span><br><strong id="rv-return-date">—</strong></div>
+          <div class="mb-12" style="grid-column:1/-1"><span class="text-muted">Purpose</span><br><strong id="rv-purpose">—</strong></div>
+          <div class="mb-12"><span class="text-muted">Activity / Event</span><br><strong id="rv-activity">—</strong></div>
+          <div class="mb-12"><span class="text-muted">Department / Program</span><br><strong id="rv-department">—</strong></div>
+        </div>
+      </div>
+      <div class="card" style="background:var(--neutral-bg); border:none;">
+        <h3 class="mb-8" style="font-size:14px">Terms and Conditions</h3>
+        <ul class="text-xs text-muted" style="padding-left:18px;line-height:1.7">
+          <li>Equipment must be returned on or before the expected return date and time.</li>
+          <li>You are responsible for any damage or loss while the equipment is in your possession.</li>
+          <li>Late returns may result in restricted borrowing privileges.</li>
+          <li>Present your QR code to the equipment administrator upon pickup and return.</li>
+        </ul>
+        <label class="checkbox-row mt-12"><input type="checkbox" required> I have read and agree to the borrowing terms and conditions.</label>
+      </div>
+    </div>
+
+    <div class="flex justify-between mt-24">
+      <button type="button" class="btn btn-outline" id="prevBtn" onclick="changeStep(-1)" style="display:none;"><i data-lucide="arrow-left"></i> Back</button>
+      <div style="margin-left:auto; display:flex; gap:10px;">
+        <button type="button" class="btn btn-primary" id="nextBtn" onclick="changeStep(1)">Next <i data-lucide="arrow-right"></i></button>
+        <button type="submit" class="btn btn-amber" id="submitBtn" style="display:none;"><i data-lucide="send"></i> Submit Request</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  let currentStep = 1;
+  const totalSteps = 4;
+
+  function onEquipmentChange() {
+    const sel = document.getElementById('equipmentSelect');
+    const opt = sel.options[sel.selectedIndex];
+    const box = document.getElementById('equipInfoBox');
+    if (!opt.value) { box.style.display = 'none'; return; }
+    document.getElementById('eqName').textContent = opt.text;
+    document.getElementById('eqLocation').textContent = opt.getAttribute('data-location') || '';
+    document.getElementById('eqCategory').textContent = opt.getAttribute('data-category') || '';
+    box.style.display = 'block';
+    const max = parseInt(opt.getAttribute('data-max')) || 1;
+    document.getElementById('quantityInput').max = max;
+    document.getElementById('qtyHint').textContent = `Up to ${max} unit(s) available.`;
+  }
+
+  function validateStep(step) {
+    const stepEl = document.querySelector(`.form-step[data-step="${step}"]`);
+    const inputs = stepEl.querySelectorAll('[required]');
+    for (const input of inputs) {
+      if (!input.reportValidity()) return false;
+    }
+    if (step === 2) {
+      const needed = document.querySelector('[name="date_needed"]').value;
+      const ret = document.querySelector('[name="expected_return_date"]').value;
+      if (needed && ret && ret < needed) {
+        alert('Expected return date cannot be before the date needed.');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function changeStep(dir) {
+    if (dir === 1 && !validateStep(currentStep)) return;
+    if (dir === 1 && currentStep === 3) fillReview();
+
+    document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+    document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+    document.querySelector(`.step[data-step="${currentStep}"]`).classList.add(dir === 1 ? 'done' : '');
+
+    currentStep += dir;
+
+    document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+    document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+    if (dir === -1) document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('done');
+
+    document.getElementById('prevBtn').style.display = currentStep === 1 ? 'none' : 'inline-flex';
+    document.getElementById('nextBtn').style.display = currentStep === totalSteps ? 'none' : 'inline-flex';
+    document.getElementById('submitBtn').style.display = currentStep === totalSteps ? 'inline-flex' : 'none';
+
+    window.scrollTo({ top: document.querySelector('.card').offsetTop - 20, behavior: 'smooth' });
+  }
+
+  function fillReview() {
+    const sel = document.getElementById('equipmentSelect');
+    document.getElementById('rv-equipment').textContent = sel.options[sel.selectedIndex]?.text || '—';
+    document.getElementById('rv-quantity').textContent = document.querySelector('[name="quantity"]').value;
+    document.getElementById('rv-date-needed').textContent = document.querySelector('[name="date_needed"]').value;
+    document.getElementById('rv-return-date').textContent = document.querySelector('[name="expected_return_date"]').value;
+    document.getElementById('rv-purpose').textContent = document.querySelector('[name="purpose"]').value;
+    document.getElementById('rv-activity').textContent = document.querySelector('[name="activity_event"]').value || '—';
+    document.getElementById('rv-department').textContent = document.querySelector('[name="department_program"]').value || '—';
+  }
+
+  document.addEventListener('DOMContentLoaded', onEquipmentChange);
+</script>
+
+<%- include('../partials/app-close') %>

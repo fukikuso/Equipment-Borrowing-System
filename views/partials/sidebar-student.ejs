@@ -1,0 +1,39 @@
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <img src="/images/logo.png" alt="CSPC Logo">
+    <div>
+      <div class="name">CSPC</div>
+      <div class="sub">Camarines Sur Polytechnic Colleges<br>Equipment Borrowing System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/dashboard" class="sidebar-link <%= active === 'dashboard' ? 'active' : '' %>"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+    <a href="/equipment" class="sidebar-link <%= active === 'equipment' ? 'active' : '' %>"><i data-lucide="package"></i> Equipment</a>
+    <% if (!currentUser || !['staff', 'admin'].includes(currentUser.role)) { %>
+    <a href="/request-equipment" class="sidebar-link <%= active === 'request' ? 'active' : '' %>"><i data-lucide="file-plus-2"></i> Request Equipment</a>
+    <% } %>
+    <% if (!currentUser || !['staff', 'admin'].includes(currentUser.role)) { %>
+    <a href="/my-borrowings" class="sidebar-link <%= active === 'borrowings' ? 'active' : '' %>"><i data-lucide="clipboard-list"></i> My Borrowings</a>
+    <% } %>
+    <% if (currentUser && ['staff', 'admin'].includes(currentUser.role)) { %>
+    <a href="/qr-scanner" class="sidebar-link <%= active === 'scanner' ? 'active' : '' %>"><i data-lucide="qr-code"></i> Pickup & Return Scanner</a>
+    <% } %>
+    <% if (!currentUser || currentUser.role !== 'staff') { %>
+    <a href="/notifications" class="sidebar-link <%= active === 'notifications' ? 'active' : '' %>">
+      <i data-lucide="bell"></i> Notifications
+      <% if (typeof unreadNotifications !== 'undefined' && unreadNotifications > 0) { %><span class="badge-count"><%= unreadNotifications %></span><% } %>
+    </a>
+    <% } %>
+    <% if (!currentUser || !['staff', 'admin'].includes(currentUser.role)) { %>
+    <a href="/borrowing-history" class="sidebar-link <%= active === 'history' ? 'active' : '' %>"><i data-lucide="history"></i> Borrowing History</a>
+    <% } %>
+    <a href="/profile" class="sidebar-link <%= active === 'profile' ? 'active' : '' %>"><i data-lucide="user-circle"></i> Profile</a>
+    <a href="/logout" class="sidebar-link"><i data-lucide="log-out"></i> Logout</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <strong>CSPC</strong>
+    Quality Education<br>for a Brighter Future
+  </div>
+</aside>

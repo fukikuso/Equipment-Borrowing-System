@@ -1,0 +1,64 @@
+<%- include('../partials/app-open', {sidebarType: 'admin', hideSearch: true}) %>
+
+<div class="page-header"><h1>Return Management</h1><p>Process equipment returns and record their condition.</p></div>
+
+<% if (rows.length === 0) { %>
+  <div class="card empty-state"><i data-lucide="check-circle-2"></i><h3>No active borrowings</h3><p>All equipment has been returned.</p></div>
+<% } %>
+
+<div class="grid grid-2">
+  <% rows.forEach(function(b) { const c = h.countdown(b.due_date); %>
+  <div class="card" style="border-left:4px solid <%= b.status === 'overdue' ? 'var(--danger)' : 'var(--border)' %>;">
+    <div class="flex justify-between items-start">
+      <div class="flex gap-12">
+        <div class="stat-icon teal" style="width:46px;height:46px;"><i data-lucide="box"></i></div>
+        <div>
+          <div class="font-bold" style="font-family:'Sora',sans-serif"><%= b.equipment_name %></div>
+          <div class="text-xs text-muted"><%= b.equipment_code %> · <%= b.request_code %></div>
+        </div>
+      </div>
+      <span class="badge <%= b.status === 'overdue' ? 'badge-danger' : 'badge-info' %>"><%= c.text %></span>
+    </div>
+    <div class="divider"></div>
+    <div class="text-sm">
+      <div class="flex justify-between mb-8"><span class="text-muted">Borrower</span><strong><%= b.borrower_name %> (<%= b.id_number %>)</strong></div>
+      <div class="flex justify-between mb-8"><span class="text-muted">Borrowed</span><strong><%= h.formatDate(b.borrow_date) %></strong></div>
+      <div class="flex justify-between"><span class="text-muted">Due</span><strong><%= h.formatDate(b.due_date) %></strong></div>
+    </div>
+    <button class="btn btn-primary btn-block mt-16" onclick="openReturn(<%= b.id %>, '<%= b.equipment_name %>')"><i data-lucide="undo-2"></i> Process Return</button>
+  </div>
+  <% }); %>
+</div>
+
+<div class="modal-backdrop" id="returnModal">
+  <div class="modal-box">
+    <h3>Confirm Return</h3>
+    <p id="returnText">Record the condition of the returned equipment.</p>
+    <form id="returnForm" method="POST">
+      <div class="form-group mt-12">
+        <label>Condition</label>
+        <select name="condition" required>
+          <option value="Good">Good Condition</option>
+          <option value="Minor Damage">Minor Damage</option>
+          <option value="Damaged">Damaged</option>
+          <option value="Missing Parts">Missing Parts</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Remarks</label><textarea name="remarks" placeholder="Optional remarks..."></textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> Confirm Return</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openReturn(id, name) {
+    document.getElementById('returnText').textContent = `Record the condition of ${name} upon return.`;
+    document.getElementById('returnForm').action = `/admin/returns/${id}`;
+    document.getElementById('returnModal').classList.add('open');
+  }
+</script>
+
+<%- include('../partials/app-close') %>

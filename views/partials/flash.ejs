@@ -1,0 +1,16 @@
+<% if (typeof successMsg !== 'undefined' && successMsg && successMsg.length) { %>
+  <% successMsg.forEach(function(msg) { %>
+    <div class="alert alert-success" data-autodismiss>
+      <i data-lucide="check-circle-2"></i>
+      <span><%= msg %></span>
+    </div>
+  <% }); %>
+<% } %>
+<% if (typeof errorMsg !== 'undefined' && errorMsg && errorMsg.length) { %>
+  <% errorMsg.forEach(function(msg) { %>
+    <div class="alert alert-error" data-autodismiss>
+      <i data-lucide="alert-circle"></i>
+      <span><%= msg %></span>
+    </div>
+  <% }); %>
+<% } %>

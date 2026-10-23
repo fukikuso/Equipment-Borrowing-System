@@ -1,0 +1,39 @@
+<header class="topbar">
+  <button class="mobile-menu-btn" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
+
+  <% if (!hideSearch) { %>
+  <form class="topbar-search" action="/search" method="GET" autocomplete="off">
+    <i data-lucide="search"></i>
+    <input type="text" name="q" placeholder="Search equipment, request, or ID..." value="<%= typeof q !== 'undefined' ? q : '' %>" required aria-label="Search equipment, request, or ID" aria-autocomplete="list" aria-controls="global-search-results" aria-expanded="false">
+    <div class="search-suggestions" id="global-search-results" role="listbox" aria-label="Search suggestions" hidden></div>
+  </form>
+  <% } %>
+
+  <div class="topbar-right">
+    <% if (currentUser.role !== 'staff') { %>
+    <a href="/notifications" class="topbar-icon-btn" aria-label="Notifications">
+      <i data-lucide="bell"></i>
+      <% if (typeof unreadNotifications !== 'undefined' && unreadNotifications > 0) { %>
+        <span class="dot"><%= unreadNotifications %></span>
+      <% } %>
+    </a>
+    <% } %>
+
+    <div class="topbar-user">
+      <img src="<%= currentUser.photo || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(currentUser.full_name) + '&backgroundColor=0D6B74' %>" alt="<%= currentUser.full_name %>">
+      <div>
+        <div class="u-name"><%= currentUser.full_name %></div>
+        <div class="u-sub"><%= currentUser.role === 'admin' ? 'Administrator' : (currentUser.role === 'staff' ? 'Staff - ' + (currentUser.department || 'IT Office') : (currentUser.role === 'instructor' ? 'Instructor - ' + (currentUser.department || 'Department') : (currentUser.program || currentUser.department || '') + ' · ' + currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1))) %></div>
+      </div>
+      <i data-lucide="chevron-down" style="width:16px;height:16px"></i>
+
+      <div class="user-menu">
+        <a href="/profile"><i data-lucide="user-circle" style="width:15px;height:15px"></i> My Profile</a>
+        <% if (currentUser.role === 'admin') { %>
+          <a href="/admin/dashboard"><i data-lucide="shield-check" style="width:15px;height:15px"></i> Admin Panel</a>
+        <% } %>
+        <a href="/logout"><i data-lucide="log-out" style="width:15px;height:15px"></i> Logout</a>
+      </div>
+    </div>
+  </div>
+</header>

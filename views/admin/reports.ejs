@@ -1,0 +1,82 @@
+<%- include('../partials/app-open', {sidebarType: 'admin'}) %>
+
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:10px;">
+  <div><h1>Reports & Analytics</h1><p>Generate and export borrowing reports.</p></div>
+  <div class="flex gap-8">
+    <a href="/admin/reports/export.csv" class="btn btn-outline"><i data-lucide="file-down"></i> Export CSV</a>
+    <button class="btn btn-outline" onclick="window.print()"><i data-lucide="printer"></i> Print</button>
+  </div>
+</div>
+
+<div class="card mb-16 no-print">
+  <form method="GET" action="/admin/reports" class="grid grid-4" style="align-items:end;">
+    <div class="form-group" style="margin-bottom:0"><label>From</label><input type="date" name="from" value="<%= filters.from %>"></div>
+    <div class="form-group" style="margin-bottom:0"><label>To</label><input type="date" name="to" value="<%= filters.to %>"></div>
+    <div class="form-group" style="margin-bottom:0">
+      <label>Category</label>
+      <select name="category"><option value="all">All</option><% categories.forEach(function(c) { %><option value="<%= c.name %>" <%= filters.category === c.name ? 'selected' : '' %>><%= c.name %></option><% }); %></select>
+    </div>
+    <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> Generate Report</button>
+  </form>
+</div>
+
+<div class="grid grid-2 mb-24" style="align-items:start;">
+  <div class="card">
+    <h3 class="mb-12">Borrowing Requests Over Time</h3>
+    <canvas id="summaryChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <h3 class="mb-12">Most Borrowed Equipment</h3>
+    <canvas id="topChart" height="180"></canvas>
+  </div>
+</div>
+
+<div class="grid grid-2" style="align-items:start;">
+  <div class="card card-flush">
+    <div style="padding:20px 20px 0"><h3><i data-lucide="alert-triangle" style="width:15px;height:15px;color:var(--danger)"></i> Overdue Report</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Request ID</th><th>Borrower</th><th>Equipment</th><th>Due Date</th></tr></thead>
+        <tbody>
+          <% if (overdueReport.length === 0) { %><tr><td colspan="4" class="text-center text-muted text-sm" style="text-align:center;padding:20px;">No overdue items.</td></tr><% } %>
+          <% overdueReport.forEach(function(r) { %>
+          <tr><td><%= r.request_code %></td><td><%= r.full_name %></td><td><%= r.equipment_name %></td><td><span class="badge badge-danger"><%= h.formatDate(r.due_date) %></span></td></tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card card-flush">
+    <div style="padding:20px 20px 0"><h3><i data-lucide="wrench" style="width:15px;height:15px;color:var(--warning)"></i> Equipment Damage Report</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Request ID</th><th>Borrower</th><th>Equipment</th><th>Condition</th></tr></thead>
+        <tbody>
+          <% if (damageReport.length === 0) { %><tr><td colspan="4" class="text-center text-muted text-sm" style="text-align:center;padding:20px;">No damage reports.</td></tr><% } %>
+          <% damageReport.forEach(function(r) { %>
+          <tr><td><%= r.request_code %></td><td><%= r.full_name %></td><td><%= r.equipment_name %></td><td><span class="badge <%= h.badgeClass(r.condition_after) %>"><%= r.condition_after %></span></td></tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const summaryLabels = <%- JSON.stringify(summary.map(s => s.day).reverse()) %>;
+  const summaryData = <%- JSON.stringify(summary.map(s => s.total).reverse()) %>;
+  new Chart(document.getElementById('summaryChart'), {
+    type: 'line',
+    data: { labels: summaryLabels, datasets: [{ label: 'Requests', data: summaryData, borderColor: '#174A8B', backgroundColor: 'rgba(23,74,139,0.1)', fill: true, tension: 0.3 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+  new Chart(document.getElementById('topChart'), {
+    type: 'bar',
+    data: { labels: <%- JSON.stringify(mostBorrowed.map(m => m.name)) %>, datasets: [{ data: <%- JSON.stringify(mostBorrowed.map(m => m.total)) %>, backgroundColor: '#F59E0B', borderRadius: 6 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+</script>
+
+<%- include('../partials/app-close') %>

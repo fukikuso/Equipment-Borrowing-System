@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body>
+  <div class="login-shell">
+    <div class="login-hero">
+      <div class="hero-top">
+        <img src="/images/logo.png" alt="CSPC Logo">
+        <div>
+          <div class="t1">CSPC</div>
+          <div class="t2">Camarines Sur Polytechnic Colleges</div>
+        </div>
+      </div>
+
+      <h1>Equipment Borrowing<br>System</h1>
+      <div class="tagline">Borrow Today. Build Tomorrow.</div>
+
+      <div class="cat-row">
+        <div class="cat-item"><div class="ic"><i data-lucide="laptop"></i></div>Laptops</div>
+        <div class="cat-item"><div class="ic"><i data-lucide="projector"></i></div>Projectors</div>
+        <div class="cat-item"><div class="ic"><i data-lucide="camera"></i></div>Cameras</div>
+        <div class="cat-item"><div class="ic"><i data-lucide="mic"></i></div>Audio/Visual Tools</div>
+      </div>
+
+      <div class="campus-quote">One Campus.<br>Many Possibilities.</div>
+      <div class="footer-strip">
+        <span><i data-lucide="landmark" style="width:13px;height:13px;vertical-align:-2px"></i> Camarines Sur Polytechnic Colleges &nbsp;|&nbsp; Quality Education · Service · Excellence</span>
+        <span><i data-lucide="shield" style="width:13px;height:13px;vertical-align:-2px"></i> CSPC IT Services</span>
+      </div>
+    </div>
+
+    <div class="login-panel">
+      <div class="login-card">
+        <div class="ic-badge"><i data-lucide="shield-check"></i></div>
+        <h2>Welcome Back!</h2>
+        <p class="subtitle">Sign in to your CSPC Equipment Borrowing System account.</p>
+        <p class="text-sm text-muted" style="margin-top:-8px; margin-bottom:18px; text-align:center;">Use your school ID or email to continue.</p>
+
+        <%- include('../partials/flash') %>
+
+        <form action="/login" method="POST">
+          <div class="form-group">
+            <label>School ID or Email</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="user" class="leading"></i>
+              <input type="text" name="identifier" placeholder="Enter your School ID or email" autocomplete="username" required autofocus>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-icon-wrap">
+              <i data-lucide="lock" class="leading"></i>
+              <input type="password" name="password" placeholder="Enter your password" required>
+              <button type="button" class="toggle-pass" aria-label="Show password"><i data-lucide="eye"></i></button>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center mb-16">
+            <label class="checkbox-row" style="margin-bottom:0">
+              <input type="checkbox" name="remember"> Remember me
+            </label>
+            <a href="/forgot-password" class="pill-link text-sm">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">Login <i data-lucide="arrow-right"></i></button>
+        </form>
+
+        <p class="text-center text-sm mt-16" style="text-align:center"><a href="/register" class="pill-link">Create an account</a></p>
+
+        <div class="or-divider">or</div>
+
+        <div class="login-footer-note">
+          <i data-lucide="shield"></i>
+          <div><strong>For authorized users only.</strong><br>CSPC Equipment Borrowing System</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/scripts') %>
+</body>
+</html>

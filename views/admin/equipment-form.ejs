@@ -1,0 +1,95 @@
+<%- include('../partials/app-open', {sidebarType: 'admin'}) %>
+
+<a href="/admin/equipment" class="link-back"><i data-lucide="arrow-left"></i> Back to Equipment</a>
+<div class="page-header"><h1><%= equipment ? 'Edit Equipment' : 'Add Equipment' %></h1><p><%= equipment ? equipment.equipment_code : 'Create a new item in the campus equipment inventory.' %></p></div>
+
+<div class="grid" style="grid-template-columns: 2fr 1fr; align-items:start;">
+  <div class="card">
+    <form action="<%= equipment ? '/admin/equipment/' + equipment.id : '/admin/equipment' %>" method="POST" enctype="multipart/form-data">
+      <div class="grid grid-2">
+        <div class="form-group"><label>Equipment Name <span style="color:var(--danger)">*</span></label><input type="text" name="name" value="<%= equipment ? equipment.name : '' %>" required></div>
+        <div class="form-group">
+          <label>Category</label>
+          <select name="category_id">
+            <option value="">— None —</option>
+            <% categories.forEach(function(c) { %><option value="<%= c.id %>" <%= equipment && equipment.category_id === c.id ? 'selected' : '' %>><%= c.name %></option><% }); %>
+          </select>
+        </div>
+        <div class="form-group"><label>Brand / Model</label><input type="text" name="brand_model" value="<%= equipment ? equipment.brand_model : '' %>"></div>
+        <div class="form-group">
+          <label>Condition</label>
+          <select name="condition_status">
+            <% ['Excellent','Good','Fair','Poor'].forEach(function(c) { %>
+              <option value="<%= c %>" <%= equipment && equipment.condition_status === c ? 'selected' : '' %>><%= c %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="form-group"><label>Quantity <span style="color:var(--danger)">*</span></label><input type="number" name="quantity_total" min="1" value="<%= equipment ? equipment.quantity_total : 1 %>" required></div>
+        <div class="form-group"><label>Location <span style="color:var(--danger)">*</span></label><input type="text" name="location" value="<%= equipment ? equipment.location : '' %>" required></div>
+      </div>
+
+      <div class="form-group"><label>Description</label><textarea name="description"><%= equipment ? equipment.description : '' %></textarea></div>
+
+      <div class="form-group">
+        <label>Specifications</label>
+        <textarea name="specifications" placeholder="One per line, e.g.&#10;Processor: Intel Core i5&#10;RAM: 8GB"><%
+          if (equipment && equipment.specifications) {
+            let specs = {};
+            try { specs = typeof equipment.specifications === 'string' ? JSON.parse(equipment.specifications) : equipment.specifications; } catch(e) {}
+            %><%= Object.keys(specs).map(k => k + ': ' + specs[k]).join('\n') %><%
+          }
+        %></textarea>
+        <div class="form-hint">One "Key: Value" pair per line.</div>
+      </div>
+
+      <div class="form-group"><label>Borrowing Rules</label><textarea name="borrowing_rules"><%= equipment ? equipment.borrowing_rules : '' %></textarea></div>
+
+      <div class="form-group">
+        <label>Equipment Image</label>
+        <input type="file" name="image">
+        <% if (equipment && equipment.image) { %><div class="form-hint">Current image is set. Uploading a new one will replace it.</div><% } %>
+      </div>
+
+      <% if (equipment) { %>
+      <div class="form-group">
+        <label>Maintenance Status</label>
+        <select name="maintenance_status">
+          <% ['Operational','Scheduled Maintenance','Under Maintenance','Repair Needed','Retired'].forEach(function(s) { %>
+            <option value="<%= s %>" <%= equipment.maintenance_status === s ? 'selected' : '' %>><%= s %></option>
+          <% }); %>
+        </select>
+      </div>
+      <% } %>
+
+      <button type="submit" class="btn btn-primary"><i data-lucide="save"></i> <%= equipment ? 'Save Changes' : 'Add Equipment' %></button>
+    </form>
+  </div>
+
+  <div>
+    <% if (equipment) { %>
+    <div class="card mb-16" style="text-align:center;">
+      <h3 class="mb-12" style="font-size:15px">Equipment QR Code</h3>
+      <% if (equipment.qr_code_path) { %>
+        <img src="<%= equipment.qr_code_path %>" style="width:100%;max-width:220px;border-radius:12px;border:1px solid var(--border);padding:10px;">
+      <% } else { %>
+        <div class="empty-state"><i data-lucide="qr-code"></i><p>No QR code generated yet.</p></div>
+      <% } %>
+      <div class="flex gap-8 mt-16">
+        <% if (equipment.qr_code_path) { %>
+          <a href="<%= equipment.qr_code_path %>" download class="btn btn-outline btn-block btn-sm"><i data-lucide="download"></i> Download</a>
+        <% } %>
+        <form action="/admin/equipment/<%= equipment.id %>/regenerate-qr" method="POST" style="flex:1">
+          <button class="btn btn-primary btn-block btn-sm"><i data-lucide="refresh-cw"></i> <%= equipment.qr_code_path ? 'Regenerate' : 'Generate' %></button>
+        </form>
+      </div>
+    </div>
+    <% } else { %>
+      <div class="card" style="background:var(--teal-light);border:none;">
+        <i data-lucide="qr-code" style="color:var(--teal)"></i>
+        <p class="text-sm mt-8">A QR code will be generated automatically once this equipment is added.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('./head') %>
+</head>
+<body>
+  <div class="app-shell">
+    <% if (sidebarType === 'admin') { %>
+      <%- include('./sidebar-admin') %>
+    <% } else { %>
+      <%- include('./sidebar-student') %>
+    <% } %>
+    <div class="main-col">
+      <%- include('./topbar', {hideSearch: typeof hideSearch !== 'undefined' && hideSearch}) %>
+      <main class="page-content">
+        <%- include('./flash') %>

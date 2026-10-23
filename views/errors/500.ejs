@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('../partials/head') %></head>
+<body>
+  <div class="login-panel" style="min-height:100vh">
+    <div class="login-card" style="text-align:center;max-width:460px">
+      <div class="ic-badge" style="background:var(--danger-bg);color:var(--danger)"><i data-lucide="alert-triangle"></i></div>
+      <h2>Something Went Wrong</h2>
+      <p class="subtitle">An unexpected error occurred while processing your request. Please try again, and contact the IT Office if the problem continues.</p>
+      <% if (typeof message !== 'undefined' && message) { %>
+        <p class="text-xs text-muted" style="background:var(--neutral-bg);padding:10px;border-radius:8px;text-align:left"><%= message %></p>
+      <% } %>
+      <a href="javascript:history.back()" class="btn btn-primary btn-block"><i data-lucide="arrow-left"></i> Go Back</a>
+    </div>
+  </div>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

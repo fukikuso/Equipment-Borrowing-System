@@ -1,0 +1,48 @@
+<%- include('../partials/app-open', {sidebarType: 'student'}) %>
+
+<div class="breadcrumb"><a href="/dashboard">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>Borrowing History</span></div>
+<div class="page-header">
+  <h1>Borrowing History</h1>
+  <p>Complete history of your equipment transactions.</p>
+</div>
+
+<div class="card mb-16">
+  <form method="GET" action="/borrowing-history" class="grid grid-4" style="align-items:end;">
+    <div class="form-group" style="margin-bottom:0"><label>Search</label><input type="text" name="q" placeholder="Equipment or Request ID" value="<%= filters.q %>"></div>
+    <div class="form-group" style="margin-bottom:0"><label>From</label><input type="date" name="from" value="<%= filters.from %>"></div>
+    <div class="form-group" style="margin-bottom:0"><label>To</label><input type="date" name="to" value="<%= filters.to %>"></div>
+    <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> Filter</button>
+  </form>
+</div>
+
+<div class="card card-flush">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Equipment</th><th>Request ID</th><th>Borrow Date</th><th>Return Date</th><th>Duration</th><th>Status</th><th>Condition</th></tr></thead>
+      <tbody>
+        <% if (rows.length === 0) { %>
+          <tr><td colspan="7"><div class="empty-state"><i data-lucide="history"></i><h3>No history found</h3></div></td></tr>
+        <% } %>
+        <% rows.forEach(function(r) {
+          let duration = '—';
+          if (r.borrow_date && r.return_date) {
+            const days = Math.max(Math.round((new Date(r.return_date) - new Date(r.borrow_date)) / 86400000), 0);
+            duration = days + ' day' + (days !== 1 ? 's' : '');
+          }
+        %>
+        <tr onclick="location.href='/requests/<%= r.id %>'" style="cursor:pointer">
+          <td class="font-semibold"><%= r.equipment_name %> <span class="text-xs text-muted">(<%= r.equipment_code %>)</span></td>
+          <td><%= r.request_code %></td>
+          <td><%= r.borrow_date ? h.formatDate(r.borrow_date) : '—' %></td>
+          <td><%= r.return_date ? h.formatDate(r.return_date) : '—' %></td>
+          <td><%= duration %></td>
+          <td><span class="badge <%= h.badgeClass(r.status) %>"><%= h.statusLabel(r.status) %></span></td>
+          <td><% if (r.condition_after) { %><span class="badge <%= h.badgeClass(r.condition_after) %>"><%= r.condition_after %></span><% } else { %>—<% } %></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

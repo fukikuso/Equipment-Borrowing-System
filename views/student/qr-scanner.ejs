@@ -1,0 +1,230 @@
+<%- include('../partials/app-open', {sidebarType: 'admin', hideSearch: true}) %>
+
+<div class="breadcrumb"><a href="/dashboard">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>Pickup & Return Scanner</span></div>
+<div class="page-header">
+  <h1>Pickup & Return Scanner</h1>
+  <p>Scan an approved request QR for pickup, or the equipment QR for an active or overdue return. The transaction status is visible to the admin.</p>
+</div>
+
+<div class="grid" style="grid-template-columns: 1.1fr 1fr; align-items:start;">
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" id="tabScan" onclick="switchMode('scan')"><i data-lucide="scan-line" style="width:15px;height:15px"></i> Scan QR Code</button>
+      <button class="tab-btn" id="tabManual" onclick="switchMode('manual')"><i data-lucide="search" style="width:15px;height:15px"></i> Enter Request ID</button>
+    </div>
+
+    <div id="scanMode">
+      <div class="scanner-frame" id="scannerFrame">
+        <div id="qr-reader" style="width:100%;height:100%;"></div>
+        <div class="reticle" id="reticle"></div>
+        <div class="hint">Position the QR code within the frame</div>
+      </div>
+      <div class="flex gap-10 mt-16">
+        <button class="btn btn-outline btn-block" id="startBtn" onclick="startScanner()"><i data-lucide="camera"></i> Start Camera</button>
+        <button class="btn btn-primary btn-block" id="stopBtn" onclick="stopScanner()" style="display:none;"><i data-lucide="square"></i> Stop</button>
+      </div>
+    </div>
+
+    <div id="manualMode" style="display:none;">
+      <div class="form-group mt-16">
+          <label>Request or Equipment QR / ID</label>
+        <div class="flex gap-8">
+          <input type="text" id="manualCode" placeholder="e.g. REQ-00125 or EQ-001">
+          <button class="btn btn-primary" onclick="lookupCode(document.getElementById('manualCode').value)">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-16" style="background:var(--neutral-bg); border:none;">
+      <div class="flex items-center gap-8 mb-8"><i data-lucide="info" style="width:15px;height:15px"></i><strong class="text-sm">Scan Instructions</strong></div>
+      <ol class="text-xs text-muted" style="padding-left:18px;line-height:1.9">
+        <li>Scan the request QR for pickup, or the equipment QR for an active or overdue return.</li>
+        <li>If multiple units are borrowed, select the matching borrower before confirming the return.</li>
+        <li>Each completed scan updates the request and borrowing record for admin review.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div>
+    <div id="resultEmpty" class="card empty-state">
+      <i data-lucide="qr-code"></i>
+      <h3>No transaction scanned yet</h3>
+      <p>Scan a QR code or search a Request ID to see details here.</p>
+    </div>
+
+    <div id="resultBox" style="display:none;"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+  const canRelease = <%= canRelease %>;
+  const canReturn = <%= canReturn %>;
+  let html5QrCode = null;
+  let scanning = false;
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+  }
+
+  function switchMode(mode) {
+    document.getElementById('scanMode').style.display = mode === 'scan' ? 'block' : 'none';
+    document.getElementById('manualMode').style.display = mode === 'manual' ? 'block' : 'none';
+    document.getElementById('tabScan').classList.toggle('active', mode === 'scan');
+    document.getElementById('tabManual').classList.toggle('active', mode === 'manual');
+    if (mode !== 'scan') stopScanner();
+  }
+
+  function startScanner() {
+    if (scanning) return;
+    document.getElementById('reticle').style.display = 'none';
+    html5QrCode = new Html5Qrcode("qr-reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 220 },
+      (decodedText) => { lookupCode(decodedText); stopScanner(); },
+      () => {}
+    ).then(() => {
+      scanning = true;
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'inline-flex';
+    }).catch((err) => {
+      alert('Could not access the camera. You can use Manual Search instead.\n' + err);
+    });
+  }
+
+  function stopScanner() {
+    if (html5QrCode && scanning) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        scanning = false;
+        document.getElementById('startBtn').style.display = 'inline-flex';
+        document.getElementById('stopBtn').style.display = 'none';
+        document.getElementById('reticle').style.display = 'block';
+      }).catch(() => {});
+    }
+  }
+
+  async function lookupCode(code) {
+    if (!code || !code.trim()) return;
+    const res = await fetch('/qr-scanner/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code.trim() })
+    });
+    const data = await res.json();
+    renderResult(data);
+  }
+
+  function renderResult(data) {
+    document.getElementById('resultEmpty').style.display = 'none';
+    const box = document.getElementById('resultBox');
+    box.style.display = 'block';
+
+    if (!data.ok) {
+      box.innerHTML = `<div class="card"><div class="alert alert-error" style="margin-bottom:0"><i data-lucide="alert-circle"></i><span>${data.message}</span></div></div>`;
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+
+    if (data.action === 'select_return') {
+      box.innerHTML = `
+        <div class="card">
+          <h3 class="mb-12">Select the borrower</h3>
+          <p class="text-sm text-muted mb-16">More than one active borrowing matches this equipment QR. Choose the borrower returning this unit.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Borrower</th><th>Request</th><th>Status</th><th>Due</th><th></th></tr></thead>
+            <tbody>${data.matches.map((match) => `
+              <tr>
+                <td>${escapeHtml(match.borrower_name)} (${escapeHtml(match.id_number)})</td>
+                <td>${escapeHtml(match.request_code)}</td>
+                <td>${escapeHtml(match.borrowing_status)}</td>
+                <td>${new Date(match.due_date).toLocaleDateString()}</td>
+                <td><button class="btn btn-primary btn-sm" data-return-request="${match.request_code}">Select</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table></div>
+        </div>`;
+      box.querySelectorAll('[data-return-request]').forEach((button) => {
+        button.addEventListener('click', () => lookupCode(button.dataset.returnRequest));
+      });
+      return;
+    }
+
+    const r = data.request;
+    let actionHtml = '';
+
+    if (data.action === 'release' && canRelease) {
+      actionHtml = `
+        <button class="btn btn-primary btn-block mt-16" onclick="confirmAction(${r.id}, 'release')"><i data-lucide="check"></i> Confirm Release</button>`;
+    } else if (data.action === 'return' && canReturn) {
+      actionHtml = `
+        <div class="form-group mt-16">
+          <label>Condition on Return</label>
+          <select id="conditionSelect">
+            <option value="Good">Good Condition</option>
+            <option value="Minor Damage">Minor Damage</option>
+            <option value="Damaged">Damaged</option>
+            <option value="Missing Parts">Missing Parts</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Remarks</label><textarea id="remarksInput" placeholder="Optional remarks..."></textarea></div>
+        <button class="btn btn-primary btn-block" onclick="confirmAction(${r.id}, 'return')"><i data-lucide="check"></i> Confirm Return</button>`;
+    } else if (data.action === 'release') {
+      actionHtml = `<div class="alert" style="background:var(--neutral-bg);margin-top:14px;margin-bottom:0"><i data-lucide="lock"></i><span>Only staff or administrators can release equipment.</span></div>`;
+    } else if (data.action === 'return') {
+      actionHtml = `<div class="alert" style="background:var(--neutral-bg);margin-top:14px;margin-bottom:0"><i data-lucide="lock"></i><span>Only authorized staff can process returns.</span></div>`;
+    } else {
+      actionHtml = `<div class="alert" style="background:var(--neutral-bg);margin-top:14px;margin-bottom:0"><i data-lucide="info"></i><span>This request is not currently ready for pickup or return (status: ${r.status.replace('_',' ')}).</span></div>`;
+    }
+
+    box.innerHTML = `
+      <div class="card">
+        <div class="alert alert-success" style="margin-bottom:16px"><i data-lucide="check-circle-2"></i><span>QR Code Scanned Successfully. Details verified below.</span></div>
+
+        <div class="flex items-center gap-10 mb-16">
+          <img src="${r.photo || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(r.borrower_name) + '&backgroundColor=0D6B74'}" style="width:46px;height:46px;border-radius:50%;object-fit:cover">
+          <div>
+            <div class="font-semibold">${r.borrower_name} <span class="badge badge-info">${r.borrower_role}</span></div>
+            <div class="text-xs text-muted">${r.id_number}${r.program ? ' · ' + r.program : ''}</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="text-sm">
+          <div class="flex justify-between mb-8"><span class="text-muted">Equipment</span><strong>${r.equipment_name} (${r.equipment_code})</strong></div>
+          <div class="flex justify-between mb-8"><span class="text-muted">Request ID</span><strong>${r.request_code}</strong></div>
+          <div class="flex justify-between mb-8"><span class="text-muted">Status</span><strong>${r.status.replace('_',' ')}</strong></div>
+          <div class="flex justify-between mb-8"><span class="text-muted">Purpose</span><strong>${r.purpose}</strong></div>
+          <div class="flex justify-between mb-8"><span class="text-muted">Quantity</span><strong>${r.quantity} unit(s)</strong></div>
+          <div class="flex justify-between"><span class="text-muted">Location</span><strong>${r.location}</strong></div>
+        </div>
+        ${actionHtml}
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function confirmAction(requestId, action) {
+    const payload = { requestId, action };
+    if (action === 'return') {
+      payload.condition = document.getElementById('conditionSelect').value;
+      payload.remarks = document.getElementById('remarksInput').value;
+    }
+    const res = await fetch('/qr-scanner/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('resultBox').innerHTML = `<div class="card"><div class="alert alert-success" style="margin-bottom:0"><i data-lucide="check-circle-2"></i><span>${data.message}</span></div></div>`;
+    } else {
+      document.getElementById('resultBox').innerHTML = `<div class="card"><div class="alert alert-error" style="margin-bottom:0"><i data-lucide="alert-circle"></i><span>${data.message}</span></div></div>`;
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+</script>
+
+<%- include('../partials/app-close') %>

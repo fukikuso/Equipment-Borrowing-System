@@ -1,0 +1,64 @@
+<%- include('../partials/app-open', {sidebarType: 'student'}) %>
+
+<div class="breadcrumb"><a href="/dashboard">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>My Profile</span></div>
+<div class="page-header"><h1>My Profile</h1><p>Manage your personal information and account details.</p></div>
+
+<div class="grid" style="grid-template-columns: 1fr 1.6fr; align-items:start;">
+  <div class="card" style="text-align:center;">
+    <img src="<%= profileUser.photo || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(profileUser.full_name) + '&backgroundColor=0D6B74' %>" style="width:96px;height:96px;border-radius:50%;object-fit:cover;margin-bottom:12px;">
+    <h3><%= profileUser.full_name %></h3>
+    <div class="text-sm text-muted"><%= profileUser.id_number %></div>
+    <span class="badge badge-info mt-8"><%= profileUser.role.charAt(0).toUpperCase() + profileUser.role.slice(1) %></span>
+    <span class="badge <%= profileUser.account_status === 'active' ? 'badge-success' : 'badge-neutral' %> mt-8"><%= profileUser.account_status.charAt(0).toUpperCase() + profileUser.account_status.slice(1) %></span>
+
+    <div class="divider"></div>
+    <div class="grid grid-2 text-center">
+      <div><div class="stat-value" style="font-size:20px"><%= stats.total_borrowings %></div><div class="stat-label">Total</div></div>
+      <div><div class="stat-value" style="font-size:20px"><%= stats.active_borrowings %></div><div class="stat-label">Active</div></div>
+      <div><div class="stat-value" style="font-size:20px;color:var(--success)"><%= stats.completed_borrowings %></div><div class="stat-label">Completed</div></div>
+      <div><div class="stat-value" style="font-size:20px;color:var(--danger)"><%= stats.overdue_records %></div><div class="stat-label">Overdue</div></div>
+    </div>
+
+    <form action="/profile" method="POST" enctype="multipart/form-data" class="mt-16">
+      <label class="btn btn-outline btn-block btn-sm" style="cursor:pointer;">
+        <i data-lucide="camera"></i> Change Photo
+        <input type="file" name="photo" style="display:none" onchange="this.form.submit()">
+      </label>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-16">Account Information</h3>
+    <form action="/profile" method="POST">
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" name="full_name" value="<%= profileUser.full_name %>" required>
+        </div>
+        <div class="form-group">
+          <label>ID Number</label>
+          <input type="text" value="<%= profileUser.id_number %>" disabled>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" value="<%= profileUser.email || '' %>">
+        </div>
+        <div class="form-group">
+          <label>Contact Number</label>
+          <input type="tel" name="contact_number" value="<%= profileUser.contact_number || '' %>">
+        </div>
+        <div class="form-group">
+          <label>Program</label>
+          <input type="text" name="program" value="<%= profileUser.program || '' %>">
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" name="department" value="<%= profileUser.department || '' %>">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary"><i data-lucide="save"></i> Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

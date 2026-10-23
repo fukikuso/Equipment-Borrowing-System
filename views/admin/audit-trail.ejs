@@ -1,0 +1,37 @@
+<%- include('../partials/app-open', {sidebarType: 'admin'}) %>
+
+<div class="page-header"><h1>Audit Trail</h1><p>Chronological record of important actions taken across the system.</p></div>
+
+<div class="card mb-16">
+  <form method="GET" action="/admin/audit-trail" class="flex gap-10" style="flex-wrap:wrap;">
+    <input type="text" name="q" placeholder="Search by user or action..." value="<%= filters.q %>" style="flex:1;min-width:200px;">
+    <select name="module" style="max-width:180px;" onchange="this.form.submit()">
+      <option value="all" <%= filters.module === 'all' ? 'selected' : '' %>>All Modules</option>
+      <% modules.forEach(function(m) { %><option value="<%= m.module %>" <%= filters.module === m.module ? 'selected' : '' %>><%= m.module %></option><% }); %>
+    </select>
+    <input type="date" name="from" value="<%= filters.from %>" style="max-width:160px;">
+    <input type="date" name="to" value="<%= filters.to %>" style="max-width:160px;">
+    <button type="submit" class="btn btn-primary"><i data-lucide="search"></i> Search</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="timeline">
+    <% if (rows.length === 0) { %><div class="empty-state"><i data-lucide="shield"></i><h3>No activity recorded</h3></div><% } %>
+    <% rows.forEach(function(a, i) { %>
+    <div class="timeline-step done">
+      <div>
+        <div class="timeline-dot"><i data-lucide="activity"></i></div>
+        <% if (i < rows.length - 1) { %><div class="timeline-line"></div><% } %>
+      </div>
+      <div class="timeline-content" style="padding-bottom:6px;">
+        <div class="t-title"><%= a.full_name || 'System' %> <span class="text-muted" style="font-weight:500">— <%= a.action %></span></div>
+        <div class="t-time"><%= h.formatDateTime(a.created_at) %> · <span class="badge badge-neutral"><%= a.module %></span> <%= a.ip_address ? '· ' + a.ip_address : '' %></div>
+        <% if (a.details) { %><div class="text-xs text-muted mt-8"><%= a.details %></div><% } %>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

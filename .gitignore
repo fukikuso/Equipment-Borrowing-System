@@ -1,0 +1,7 @@
+node_modules/
+.env
+public/uploads/equipment/
+public/uploads/avatars/
+public/uploads/documents/
+public/uploads/qr/
+*.log

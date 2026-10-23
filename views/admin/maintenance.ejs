@@ -1,0 +1,86 @@
+<%- include('../partials/app-open', {sidebarType: 'admin', hideSearch: true}) %>
+
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:10px;">
+  <div><h1>Maintenance Management</h1><p>Track equipment issues and maintenance status.</p></div>
+  <button class="btn btn-primary" data-modal-open="logModal"><i data-lucide="plus"></i> Log Maintenance Issue</button>
+</div>
+
+<div class="grid grid-3 mb-24">
+  <% equipmentUnderMaintenance.forEach(function(e) { %>
+  <div class="card">
+    <div class="flex justify-between items-start mb-8">
+      <div><div class="font-bold" style="font-family:'Sora',sans-serif"><%= e.name %></div><div class="text-xs text-muted"><%= e.equipment_code %> · <%= e.category_name %></div></div>
+      <span class="badge <%= h.badgeClass(e.maintenance_status) %>"><%= e.maintenance_status %></span>
+    </div>
+    <div class="text-xs text-muted">Next maintenance: <%= e.next_maintenance ? h.formatDate(e.next_maintenance) : 'Not scheduled' %></div>
+    <form action="/admin/equipment/<%= e.id %>/maintenance-status" method="POST" class="mt-12" style="display:flex;gap:8px;">
+      <select name="maintenance_status" style="flex:1;font-size:12.5px;padding:8px;" onchange="this.form.submit()">
+        <% ['Operational','Scheduled Maintenance','Under Maintenance','Repair Needed','Retired'].forEach(function(s) { %>
+          <option value="<%= s %>" <%= e.maintenance_status === s ? 'selected' : '' %>><%= s %></option>
+        <% }); %>
+      </select>
+    </form>
+  </div>
+  <% }); %>
+  <% if (equipmentUnderMaintenance.length === 0) { %>
+    <div class="card empty-state" style="grid-column:1/-1"><i data-lucide="check-circle-2"></i><h3>Nothing under maintenance</h3><p>All equipment is operational.</p></div>
+  <% } %>
+</div>
+
+<div class="card card-flush">
+  <div style="padding:20px 20px 0"><h3>Maintenance Log</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Equipment</th><th>Problem</th><th>Date Reported</th><th>Technician</th><th>Status</th><th>Completed</th><th style="min-width:245px;">Action</th></tr></thead>
+      <tbody>
+        <% if (logs.length === 0) { %><tr><td colspan="7"><div class="empty-state"><i data-lucide="wrench"></i><h3>No maintenance logs yet</h3></div></td></tr><% } %>
+        <% logs.forEach(function(l) { %>
+        <tr>
+          <td class="font-semibold"><%= l.equipment_name %> <span class="text-xs text-muted">(<%= l.equipment_code %>)</span></td>
+          <td class="text-sm"><%= l.problem %></td>
+          <td class="text-sm"><%= h.formatDate(l.date_reported) %></td>
+          <td class="text-sm"><%= l.assigned_technician || '—' %></td>
+          <td><span class="badge <%= l.status === 'Completed' ? 'badge-success' : (l.status === 'In Progress' ? 'badge-info' : 'badge-warning') %>"><%= l.status %></span></td>
+          <td class="text-sm"><%= l.completion_date ? h.formatDate(l.completion_date) : '—' %></td>
+          <td style="min-width:245px;">
+            <% if (l.status !== 'Completed') { %>
+            <form action="/admin/maintenance/<%= l.id %>" method="POST" class="flex gap-6" style="align-items:center;white-space:nowrap;">
+              <select name="status" style="width:132px;flex:0 0 132px;font-size:12px;padding:6px;">
+                <option value="Scheduled" <%= l.status === 'Scheduled' ? 'selected' : '' %>>Scheduled</option>
+                <option value="In Progress" <%= l.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+                <option value="Completed">Mark Completed</option>
+              </select>
+              <input type="hidden" name="equipment_status" value="Operational">
+              <button class="btn btn-outline btn-sm" style="flex:0 0 auto;white-space:nowrap;">Update</button>
+            </form>
+            <% } else { %>—<% } %>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="logModal">
+  <div class="modal-box">
+    <h3>Log Maintenance Issue</h3>
+    <p>This will mark the equipment as unavailable until resolved.</p>
+    <form action="/admin/maintenance" method="POST">
+      <div class="form-group mt-12">
+        <label>Equipment</label>
+        <select name="equipment_id" required>
+          <% allEquipment.forEach(function(e) { %><option value="<%= e.id %>"><%= e.name %> (<%= e.equipment_code %>)</option><% }); %>
+        </select>
+      </div>
+      <div class="form-group"><label>Problem Description</label><textarea name="problem" required placeholder="Describe the issue..."></textarea></div>
+      <div class="form-group"><label>Assigned Technician</label><input type="text" name="assigned_technician" placeholder="Optional"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Log Issue</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

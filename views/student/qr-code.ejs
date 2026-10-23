@@ -1,0 +1,68 @@
+<%
+  const dueDateTime = request.expected_return_date + ' ' + (request.expected_return_time || '17:00:00');
+%>
+<%- include('../partials/app-open', {sidebarType: 'student'}) %>
+
+<div class="breadcrumb"><a href="/dashboard">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <a href="/my-borrowings">My Borrowings</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>QR Code</span></div>
+<div class="page-header">
+  <h1>Equipment Pickup QR Code</h1>
+  <p>Download or present this code to staff when picking up the approved equipment.</p>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 1.3fr 1fr; align-items:start;">
+  <div class="card qr-frame">
+    <span class="badge <%= h.badgeClass(request.status) %> mb-16"><%= h.statusLabel(request.status) %></span>
+    <div><img src="<%= qrDataUrl %>" alt="QR Code" width="220" height="220"></div>
+    <div class="mt-16 text-xs text-muted">Request ID</div>
+    <div class="font-bold" style="font-size:18px;font-family:'Sora',sans-serif"><%= request.request_code %></div>
+    <div class="text-xs text-muted mt-8">Valid until <%= h.formatDateTime(dueDateTime) %></div>
+    <button class="btn btn-primary btn-block mt-16" onclick="downloadQr()"><i data-lucide="download"></i> Download Pickup QR</button>
+    <button class="btn btn-outline btn-block mt-8" onclick="window.print()"><i data-lucide="printer"></i> Print QR Code</button>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-16">Borrowing Details</h3>
+    <div class="text-sm">
+      <div class="flex justify-between mb-12"><span class="text-muted">Borrower</span><strong><%= currentUser.full_name %></strong></div>
+      <div class="flex justify-between mb-12"><span class="text-muted">Equipment</span><strong><%= request.equipment_name %> (<%= request.equipment_code %>)</strong></div>
+      <div class="flex justify-between mb-12"><span class="text-muted">Request ID</span><strong><%= request.request_code %></strong></div>
+      <div class="flex justify-between mb-12"><span class="text-muted">Borrow Date</span><strong><%= borrowing && borrowing.borrow_date ? h.formatDateTime(borrowing.borrow_date) : 'Pending pickup' %></strong></div>
+      <div class="flex justify-between mb-12"><span class="text-muted">Return Deadline</span><strong><%= h.formatDateTime(dueDateTime) %></strong></div>
+      <div class="flex justify-between mb-12"><span class="text-muted">Purpose</span><strong><%= request.purpose %></strong></div>
+      <div class="flex justify-between mb-12"><span class="text-muted">Department / Program</span><strong><%= request.department_program || '—' %></strong></div>
+      <div class="flex justify-between mb-12"><span class="text-muted">Quantity</span><strong><%= request.quantity %> unit(s)</strong></div>
+      <div class="flex justify-between"><span class="text-muted">Location</span><strong><%= request.location %></strong></div>
+    </div>
+    <div class="alert" style="background:var(--teal-light);color:var(--teal-dark);margin-top:16px;margin-bottom:0;">
+      <i data-lucide="info"></i>
+      <span>Keep this QR code safe. Staff will scan it to verify and record equipment pickup.</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="card mb-16">
+      <h3 class="mb-12" style="font-size:15px">How to Use the QR Code</h3>
+      <ol class="text-xs text-muted" style="padding-left:18px;line-height:2;">
+        <li>Present this QR code to staff when collecting your approved equipment.</li>
+        <li>Staff will scan and verify your request.</li>
+        <li>After the equipment is handed over, the borrowing transaction will be recorded.</li>
+        <li>Return the equipment on or before the due date.</li>
+      </ol>
+    </div>
+    <div class="card" style="background:linear-gradient(120deg, var(--teal) 0%, var(--teal-dark) 100%); color:#fff; border:none;">
+      <div class="flex items-center gap-10"><i data-lucide="shield-check"></i><strong>SMART QR BORROWING</strong></div>
+      <div class="text-xs mt-8" style="color:rgba(255,255,255,0.85)">Fast · Secure · Trackable</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function downloadQr() {
+    const a = document.createElement('a');
+    a.href = "<%= qrDataUrl %>";
+    a.download = "<%= request.request_code %>-pickup-qr.png";
+    a.click();
+  }
+</script>
+
+<%- include('../partials/app-close') %>

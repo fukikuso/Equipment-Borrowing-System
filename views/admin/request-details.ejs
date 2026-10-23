@@ -1,0 +1,93 @@
+<%- include('../partials/app-open', {sidebarType: 'admin'}) %>
+
+<a href="/admin/requests" class="link-back"><i data-lucide="arrow-left"></i> Back to Requests</a>
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:10px;">
+  <div>
+    <h1>Request <%= request.request_code %></h1>
+    <p><%= request.equipment_name %> (<%= request.equipment_code %>)</p>
+  </div>
+  <span class="badge <%= h.badgeClass(request.status) %>" style="font-size:13px;padding:6px 14px;"><%= h.statusLabel(request.status) %></span>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 1fr; align-items:start;">
+  <div class="card mb-16">
+    <h3 class="mb-16">Borrower</h3>
+    <div class="flex items-center gap-12 mb-16">
+      <img src="<%= request.photo || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(request.borrower_name) + '&backgroundColor=0D6B74' %>" style="width:52px;height:52px;border-radius:50%;object-fit:cover;">
+      <div>
+        <div class="font-semibold"><%= request.borrower_name %> <span class="badge badge-info"><%= request.borrower_role %></span></div>
+        <div class="text-xs text-muted"><%= request.id_number %> · <%= request.program || '' %></div>
+      </div>
+    </div>
+
+    <h3 class="mb-12">Request Details</h3>
+    <div class="text-sm">
+      <div class="mb-12"><span class="text-muted">Purpose</span><br><strong><%= request.purpose %></strong></div>
+      <div class="mb-12"><span class="text-muted">Quantity</span><br><strong><%= request.quantity %> unit(s)</strong></div>
+      <div class="mb-12"><span class="text-muted">Date Needed</span><br><strong><%= h.formatDate(request.date_needed) %></strong></div>
+      <div class="mb-12"><span class="text-muted">Expected Return</span><br><strong><%= h.formatDate(request.expected_return_date) %></strong></div>
+      <% if (request.activity_event) { %><div class="mb-12"><span class="text-muted">Activity / Event</span><br><strong><%= request.activity_event %></strong></div><% } %>
+      <% if (request.department_program) { %><div class="mb-12"><span class="text-muted">Department / Program</span><br><strong><%= request.department_program %></strong></div><% } %>
+      <% if (request.supporting_document) { %><div class="mb-12"><span class="text-muted">Supporting Document</span><br><a href="<%= request.supporting_document %>" target="_blank" class="pill-link">View Document</a></div><% } %>
+    </div>
+
+    <% if (request.status === 'rejected') { %>
+      <div class="alert alert-error mt-16" style="margin-bottom:0"><i data-lucide="x-circle"></i><span><strong>Rejected:</strong> <%= request.rejection_reason %></span></div>
+    <% } %>
+
+    <div class="flex gap-10 mt-16">
+      <% if (['submitted','under_review'].includes(request.status)) { %>
+        <form action="/admin/requests/<%= request.id %>/approve" method="POST" style="flex:1"><input type="hidden" name="redirectTo" value="/admin/requests/<%= request.id %>"><button class="btn btn-primary btn-block"><i data-lucide="check"></i> Approve</button></form>
+        <button class="btn btn-danger" style="flex:1" onclick="document.getElementById('rejectModal').classList.add('open')"><i data-lucide="x"></i> Reject</button>
+      <% } else if (request.status === 'ready_for_pickup') { %>
+        <a href="/borrowings/<%= request.id %>/qr" class="btn btn-primary btn-block"><i data-lucide="qr-code"></i> View / Release via QR</a>
+      <% } else if (request.status === 'borrowed' || (borrowing && ['active','overdue'].includes(borrowing.status))) { %>
+        <a href="/admin/returns" class="btn btn-primary btn-block"><i data-lucide="undo-2"></i> Process Return</a>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-16">Equipment</h3>
+    <div class="flex items-center gap-12 mb-16">
+      <div class="stat-icon teal" style="width:52px;height:52px;"><i data-lucide="box"></i></div>
+      <div>
+        <div class="font-semibold"><%= request.equipment_name %></div>
+        <div class="text-xs text-muted"><%= request.equipment_code %> · <%= request.location %></div>
+      </div>
+    </div>
+    <div class="text-sm mb-16"><span class="text-muted">Currently Available</span><br><strong><%= request.quantity_available %> unit(s)</strong></div>
+
+    <% if (borrowing) { %>
+      <div class="divider"></div>
+      <h3 class="mb-12">Transaction</h3>
+      <div class="text-sm">
+        <div class="mb-8"><span class="text-muted">Borrow Date</span><br><strong><%= borrowing.borrow_date ? h.formatDateTime(borrowing.borrow_date) : 'Pending' %></strong></div>
+        <% if (borrowing.released_by_name) { %><div class="mb-8"><span class="text-muted">Pickup processed by</span><br><strong><%= borrowing.released_by_name %></strong></div><% } %>
+        <div class="mb-8"><span class="text-muted">Due Date</span><br><strong><%= h.formatDateTime(borrowing.due_date) %></strong></div>
+        <% if (borrowing.return_date) { %>
+          <div class="mb-8"><span class="text-muted">Return Date</span><br><strong><%= h.formatDateTime(borrowing.return_date) %></strong></div>
+          <% if (borrowing.received_by_name) { %><div class="mb-8"><span class="text-muted">Return processed by</span><br><strong><%= borrowing.received_by_name %></strong></div><% } %>
+          <div class="mb-8"><span class="text-muted">Condition</span><br><span class="badge <%= h.badgeClass(borrowing.condition_after) %>"><%= borrowing.condition_after %></span></div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="rejectModal">
+  <div class="modal-box">
+    <h3>Reject This Request?</h3>
+    <p>Please provide a reason. This will be shared with the borrower.</p>
+    <form action="/admin/requests/<%= request.id %>/reject" method="POST">
+      <input type="hidden" name="redirectTo" value="/admin/requests/<%= request.id %>">
+      <div class="form-group mt-12"><textarea name="reason" placeholder="Reason for rejection..." required></textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-danger">Reject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

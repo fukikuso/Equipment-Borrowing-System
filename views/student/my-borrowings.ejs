@@ -1,0 +1,98 @@
+<%- include('../partials/app-open', {sidebarType: 'student'}) %>
+
+<div class="breadcrumb"><a href="/dashboard">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>My Borrowings</span></div>
+<div class="page-header">
+  <h1>My Borrowings</h1>
+  <p>View and manage your equipment borrowings, requests, and transaction history.</p>
+</div>
+
+<div class="tabs">
+  <a href="/my-borrowings?tab=active" class="tab-btn <%= tab === 'active' ? 'active' : '' %>">Active <span class="count"><%= counts.active %></span></a>
+  <a href="/my-borrowings?tab=pending" class="tab-btn <%= tab === 'pending' ? 'active' : '' %>">Pending <span class="count"><%= counts.pending %></span></a>
+  <a href="/my-borrowings?tab=approved" class="tab-btn <%= tab === 'approved' ? 'active' : '' %>">Approved <span class="count"><%= counts.approved %></span></a>
+  <a href="/my-borrowings?tab=returned" class="tab-btn <%= tab === 'returned' ? 'active' : '' %>">Returned <span class="count"><%= counts.returned %></span></a>
+  <a href="/my-borrowings?tab=overdue" class="tab-btn <%= tab === 'overdue' ? 'active' : '' %>">Overdue <span class="count"><%= counts.overdue %></span></a>
+</div>
+
+<div class="grid" style="grid-template-columns: 2.2fr 1fr; align-items:start;">
+  <div>
+    <% if (rows.length === 0) { %>
+      <div class="card empty-state"><i data-lucide="package-search"></i><h3>Nothing here yet</h3><p>Items in this category will show up here.</p></div>
+    <% } %>
+    <% rows.forEach(function(r) {
+        const effectiveStatus = tab === 'overdue' ? 'overdue' : (r.borrow_status === 'overdue' ? 'overdue' : r.status);
+      const borderClass = effectiveStatus === 'overdue' ? 'borrow-card-overdue' : (effectiveStatus === 'borrowed' ? 'borrow-card-active' : 'borrow-card-default');
+        const c = r.due_date ? h.countdown(r.due_date) : null;
+    %>
+    <div class="card mb-16 <%= borderClass %>">
+      <div class="flex justify-between" style="flex-wrap:wrap;gap:10px;">
+        <div class="flex gap-12">
+          <% if (r.catalogImage) { %>
+            <img src="<%= r.catalogImage %>" alt="<%= r.equipment_name %>" style="width:52px;height:52px;border-radius:14px;object-fit:cover;flex-shrink:0;">
+          <% } else { %>
+            <div class="stat-icon teal" style="width:52px;height:52px;"><i data-lucide="box"></i></div>
+          <% } %>
+          <div>
+            <span class="badge <%= h.badgeClass(effectiveStatus) %> mb-8"><%= h.statusLabel(effectiveStatus) %></span>
+            <div class="font-bold" style="font-family:'Sora',sans-serif"><%= r.equipment_name %> (<%= r.equipment_code %>)</div>
+            <div class="text-xs text-muted mt-8">
+              <% if (r.status === 'borrowed' || effectiveStatus === 'overdue') { %>
+                <i data-lucide="calendar" style="width:12px;height:12px"></i> Borrowed <%= h.formatDate(r.borrow_date) %> &nbsp; <i data-lucide="clock" style="width:12px;height:12px"></i> Due <%= h.formatDate(r.due_date) %>
+              <% } else if (r.status === 'returned' || r.status === 'completed') { %>
+                <i data-lucide="calendar-check" style="width:12px;height:12px"></i> Returned <%= r.return_date ? h.formatDate(r.return_date) : '—' %>
+              <% } else { %>
+                <i data-lucide="calendar" style="width:12px;height:12px"></i> Requested <%= h.formatDate(r.created_at) %> &nbsp; Expected <%= h.formatDate(r.date_needed) %>
+              <% } %>
+            </div>
+            <div class="text-xs text-muted mt-8"><%= r.purpose %></div>
+          </div>
+        </div>
+
+        <div style="text-align:right;min-width:150px;">
+          <% if (c && (r.status === 'borrowed')) { %>
+            <div class="text-xs text-muted">Time Remaining</div>
+            <div class="font-bold <%= c.overdue ? 'borrow-countdown-overdue' : '' %>"><%= c.text %></div>
+          <% } %>
+          <div class="flex gap-8 mt-12" style="justify-content:flex-end;flex-wrap:wrap;">
+            <% if (r.status === 'ready_for_pickup') { %>
+              <a href="/borrowings/<%= r.id %>/qr" class="btn btn-outline btn-sm"><i data-lucide="qr-code"></i> QR Code</a>
+            <% } %>
+            <a href="/requests/<%= r.id %>" class="btn btn-primary btn-sm">View Details</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+
+  <div>
+    <div class="card mb-16">
+      <h3 class="mb-12" style="font-size:15px">Borrowing Summary</h3>
+      <div class="grid grid-2">
+        <div class="card" style="box-shadow:none;background:var(--info-bg);border:none;padding:12px;"><div class="stat-value" style="font-size:18px;color:var(--info)"><%= counts.active %></div><div class="text-xs text-muted">Active</div></div>
+        <div class="card" style="box-shadow:none;background:var(--warning-bg);border:none;padding:12px;"><div class="stat-value" style="font-size:18px;color:var(--warning)"><%= counts.pending %></div><div class="text-xs text-muted">Pending</div></div>
+        <div class="card" style="box-shadow:none;background:var(--success-bg);border:none;padding:12px;"><div class="stat-value" style="font-size:18px;color:var(--success)"><%= counts.approved %></div><div class="text-xs text-muted">Approved</div></div>
+        <div class="card" style="box-shadow:none;background:var(--danger-bg);border:none;padding:12px;"><div class="stat-value" style="font-size:18px;color:var(--danger)"><%= counts.overdue %></div><div class="text-xs text-muted">Overdue</div></div>
+      </div>
+    </div>
+
+    <div class="card mb-16">
+      <h3 class="mb-12" style="font-size:15px">Quick Actions</h3>
+      <% if (currentUser.role === 'staff') { %>
+        <a href="/qr-scanner" class="flex items-center gap-10 mb-12"><div class="stat-icon teal" style="width:34px;height:34px;border-radius:9px;"><i data-lucide="qr-code" style="width:16px;height:16px"></i></div><div class="text-sm font-semibold">Pickup & Return Scanner</div></a>
+      <% } else if (currentUser.role !== 'admin') { %>
+        <a href="/request-equipment" class="flex items-center gap-10 mb-12"><div class="stat-icon teal" style="width:34px;height:34px;border-radius:9px;"><i data-lucide="file-plus-2" style="width:16px;height:16px"></i></div><div class="text-sm font-semibold">Request Equipment</div></a>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <h3 class="mb-12" style="font-size:15px">Upcoming Returns</h3>
+      <% if (upcoming.length === 0) { %><p class="text-xs text-muted">No upcoming returns.</p><% } %>
+      <% upcoming.forEach(function(u) { %>
+        <div class="flex justify-between text-sm mb-8"><span><%= u.name %></span><span class="text-xs text-muted"><%= h.formatDate(u.due_date) %></span></div>
+      <% }); %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

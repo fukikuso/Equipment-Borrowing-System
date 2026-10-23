@@ -1,0 +1,71 @@
+<%- include('../partials/app-open', {sidebarType: 'admin', hideSearch: true}) %>
+
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:10px;">
+  <div>
+    <h1>Equipment Management</h1>
+    <p>Manage the campus equipment inventory.</p>
+  </div>
+  <% if (currentUser.role === 'admin') { %>
+  <a href="/admin/equipment/new" class="btn btn-primary"><i data-lucide="plus"></i> Add Equipment</a>
+  <% } %>
+</div>
+
+<div class="card mb-16">
+  <form method="GET" action="/admin/equipment" class="flex gap-10" style="flex-wrap:wrap;">
+    <input type="text" name="q" placeholder="Search equipment..." value="<%= filters.q %>" style="flex:1;min-width:200px;">
+    <select name="category" style="max-width:200px;" onchange="this.form.submit()">
+      <option value="all">All Categories</option>
+      <% categories.forEach(function(c) { %><option value="<%= c.name %>" <%= filters.category === c.name ? 'selected' : '' %>><%= c.name %></option><% }); %>
+    </select>
+    <select name="status" style="max-width:200px;" onchange="this.form.submit()">
+      <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Active</option>
+      <option value="Operational" <%= filters.status === 'Operational' ? 'selected' : '' %>>Operational</option>
+      <option value="Under Maintenance" <%= filters.status === 'Under Maintenance' ? 'selected' : '' %>>Under Maintenance</option>
+      <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Archived</option>
+    </select>
+    <button type="submit" class="btn btn-primary"><i data-lucide="search"></i> Search</button>
+  </form>
+</div>
+
+<div class="card card-flush">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Equipment ID</th><th>Name</th><th>Category</th><th>Qty</th><th>Available</th><th>Borrowed</th><th>Condition</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% if (rows.length === 0) { %><tr><td colspan="10"><div class="empty-state"><i data-lucide="package-x"></i><h3>No equipment found</h3></div></td></tr><% } %>
+        <% rows.forEach(function(e) { %>
+        <tr>
+          <td class="font-semibold"><%= e.equipment_code %></td>
+          <td><%= e.name %><br><span class="text-xs text-muted"><%= e.brand_model %></span></td>
+          <td><%= e.category_name || '—' %></td>
+          <td><%= e.quantity_total %></td>
+          <td><%= e.quantity_available %></td>
+          <td><%= e.quantity_total - e.quantity_available %></td>
+          <td><span class="badge <%= h.badgeClass(e.condition_status) %>"><%= e.condition_status %></span></td>
+          <td class="text-sm"><%= e.location %></td>
+          <td><span class="badge <%= e.status === 'archived' ? 'badge-neutral' : h.badgeClass(e.maintenance_status) %>"><%= e.status === 'archived' ? 'Archived' : e.maintenance_status %></span></td>
+          <td>
+            <div class="flex gap-6">
+              <a href="/equipment/<%= e.id %>" class="btn btn-ghost btn-sm" title="View"><i data-lucide="eye"></i></a>
+              <% if (currentUser.role === 'admin') { %>
+                <a href="/admin/equipment/<%= e.id %>/edit" class="btn btn-ghost btn-sm" title="Edit"><i data-lucide="pencil"></i></a>
+                <% if (e.status === 'active') { %>
+                  <form action="/admin/equipment/<%= e.id %>/archive" method="POST" onsubmit="return confirm('Archive this equipment? It will no longer be requestable.')">
+                    <button class="btn btn-ghost btn-sm" style="color:var(--danger)" title="Archive"><i data-lucide="archive"></i></button>
+                  </form>
+                <% } else { %>
+                  <form action="/admin/equipment/<%= e.id %>/restore" method="POST">
+                    <button class="btn btn-ghost btn-sm" style="color:var(--success)" title="Restore"><i data-lucide="rotate-ccw"></i></button>
+                  </form>
+                <% } %>
+              <% } %>
+            </div>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

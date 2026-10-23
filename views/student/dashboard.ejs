@@ -1,0 +1,192 @@
+<%- include('../partials/app-open', {sidebarType: 'student'}) %>
+
+<div class="card mb-24" style="background:linear-gradient(120deg, var(--teal) 0%, var(--teal-dark) 100%); color:#fff; border:none; display:flex; justify-content:space-between; align-items:center; overflow:hidden; position:relative;">
+  <div style="position:relative;z-index:1;">
+    <h1 style="color:#fff;font-size:26px;">Good <%= new Date().getHours() < 12 ? 'morning' : (new Date().getHours() < 18 ? 'afternoon' : 'evening') %>, <%= currentUser.full_name.split(' ')[0] %>!</h1>
+    <p style="color:rgba(255,255,255,0.85)"><%= currentUser.role === 'staff' ? 'Manage equipment pickup and returns using the QR scanner.' : "Here's what's happening with your equipment requests and borrowings." %></p>
+    <span class="badge" style="background:rgba(255,255,255,0.18); color:#fff; margin-top:8px;"><%= currentUser.program || currentUser.department %> &nbsp;|&nbsp; <%= currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) %></span>
+  </div>
+  <div style="font-family:'Sora',sans-serif; font-style:italic; font-size:15px; color:rgba(255,255,255,0.55); text-align:right; position:relative; z-index:1; max-width:220px;">Build Skills<br>Create Opportunities</div>
+</div>
+
+<div class="grid grid-4 mb-24">
+  <% if (!['staff', 'admin'].includes(currentUser.role)) { %>
+  <div class="card stat-card">
+    <div class="stat-icon teal"><i data-lucide="monitor"></i></div>
+    <div><div class="stat-value"><%= stats.available_equipment %></div><div class="stat-label">Available Equipment</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon info"><i data-lucide="package-check"></i></div>
+    <div><div class="stat-value"><%= stats.active_borrowings %></div><div class="stat-label">My Active Borrowings</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon amber"><i data-lucide="clock"></i></div>
+    <div><div class="stat-value"><%= stats.pending_requests %></div><div class="stat-label">Pending Requests</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon danger"><i data-lucide="alert-triangle"></i></div>
+    <div><div class="stat-value"><%= stats.overdue_items %></div><div class="stat-label">Overdue Items</div></div>
+  </div>
+  <% } %>
+</div>
+
+<div class="card mb-24">
+  <h3 class="mb-12">Quick Actions</h3>
+  <div class="grid grid-3">
+    <a href="/equipment" class="card flex items-center gap-12" style="box-shadow:none;border-color:var(--border)">
+      <div class="stat-icon teal"><i data-lucide="search"></i></div>
+      <div><div class="font-semibold text-sm">Browse Equipment</div><div class="text-xs text-muted">See what's available</div></div>
+    </a>
+    <% if (currentUser.role === 'staff') { %>
+    <a href="/qr-scanner" class="card flex items-center gap-12" style="box-shadow:none;border-color:var(--border)">
+      <div class="stat-icon amber"><i data-lucide="qr-code"></i></div>
+      <div><div class="font-semibold text-sm">Pickup & Return</div><div class="text-xs text-muted">Scan an approved request QR</div></div>
+    </a>
+    <% } else if (currentUser.role !== 'admin') { %>
+    <a href="/request-equipment" class="card flex items-center gap-12" style="box-shadow:none;border-color:var(--border)">
+      <div class="stat-icon amber"><i data-lucide="file-plus-2"></i></div>
+      <div><div class="font-semibold text-sm">Request Equipment</div><div class="text-xs text-muted">Start a new request</div></div>
+    </a>
+    <% } %>
+    <% if (!['staff', 'admin'].includes(currentUser.role)) { %>
+    <a href="/my-borrowings" class="card flex items-center gap-12" style="box-shadow:none;border-color:var(--border)">
+      <div class="stat-icon success"><i data-lucide="clipboard-list"></i></div>
+      <div><div class="font-semibold text-sm">View My Borrowings</div><div class="text-xs text-muted">Track active items</div></div>
+    </a>
+    <% } %>
+  </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 2fr 1fr; align-items:stretch;">
+  <div>
+    <% if (!['staff', 'admin'].includes(currentUser.role)) { %>
+    <div class="grid grid-2 mb-24" style="align-items:stretch;">
+      <div class="card">
+        <div class="flex justify-between items-center mb-12">
+          <h3>Upcoming Returns</h3>
+          <a href="/my-borrowings?tab=active" class="pill-link text-xs">View All <i data-lucide="arrow-right" style="width:13px;height:13px"></i></a>
+        </div>
+        <% if (upcomingReturns.length === 0) { %>
+          <div class="empty-state"><i data-lucide="calendar-check"></i><h3>All caught up</h3><p>No upcoming returns.</p></div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Equipment</th><th>Due Date</th><th>Countdown</th></tr></thead>
+              <tbody>
+                <% upcomingReturns.forEach(function(r) { const c = h.countdown(r.due_date); %>
+                <tr>
+                  <td class="font-semibold"><%= r.name %></td>
+                  <td class="text-muted text-xs"><%= h.formatDate(r.due_date) %></td>
+                  <td><span class="badge <%= c.overdue ? 'badge-danger' : (c.urgent ? 'badge-warning' : 'badge-success') %>"><%= c.text %></span></td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="card">
+        <div class="flex justify-between items-center mb-12">
+          <h3>Recent Requests</h3>
+          <a href="/borrowing-history" class="pill-link text-xs">View All <i data-lucide="arrow-right" style="width:13px;height:13px"></i></a>
+        </div>
+        <% if (recentRequests.length === 0) { %>
+          <div class="empty-state"><i data-lucide="inbox"></i><h3>No requests yet</h3><p>Your requests will show up here.</p></div>
+        <% } else { %>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Equipment</th><th>Date</th><th>Status</th></tr></thead>
+              <tbody>
+                <% recentRequests.forEach(function(r) { %>
+                <tr onclick="location.href='/requests/<%= r.id %>'" style="cursor:pointer">
+                  <td class="font-semibold"><%= r.equipment_name %></td>
+                  <td class="text-muted text-xs"><%= h.formatDate(r.created_at) %></td>
+                  <td><span class="badge <%= h.badgeClass(r.status) %>"><%= h.statusLabel(r.status) %></span></td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card">
+      <div class="flex justify-between items-center mb-12">
+        <h3>Available Equipment <span class="text-muted text-sm font-semibold">(Popular)</span></h3>
+        <a href="/equipment" class="pill-link text-xs">View All <i data-lucide="arrow-right" style="width:13px;height:13px"></i></a>
+      </div>
+      <div class="grid grid-5">
+        <% popularEquipment.forEach(function(e) { %>
+        <div class="card dashboard-equipment-card" style="box-shadow:none;border-color:var(--border);padding:14px;">
+          <div style="height:70px;display:flex;align-items:center;justify-content:center;background:var(--teal-light);border-radius:10px;margin-bottom:8px;overflow:hidden;">
+            <% if (e.catalogImage) { %>
+              <img src="<%= e.catalogImage %>" alt="<%= e.name %>" style="width:100%;height:100%;object-fit:cover;display:block;">
+            <% } else { %>
+              <i data-lucide="<%= e.category_icon || 'box' %>" style="width:26px;height:26px;color:var(--teal)"></i>
+            <% } %>
+          </div>
+          <div class="equipment-info">
+            <div class="font-semibold text-sm"><%= e.name %></div>
+            <div class="text-xs text-muted mb-8"><%= e.equipment_code %></div>
+            <div class="equipment-availability text-xs" style="color:<%= e.quantity_available > 0 ? 'var(--success)' : 'var(--danger)' %>;font-weight:600;">
+              <%= e.quantity_available > 0 ? 'Available (' + e.quantity_available + ')' : 'Unavailable' %>
+            </div>
+          </div>
+          <% if (currentUser.role === 'staff') { %>
+            <a href="/qr-scanner" class="btn btn-outline btn-sm btn-block request-action">Scan Pickup / Return</a>
+          <% } else if (currentUser.role === 'admin') { %>
+          <% } else if (e.quantity_available > 0 && e.maintenance_status === 'Operational') { %>
+            <a href="/request-equipment?equipment=<%= e.id %>" class="btn btn-primary btn-sm btn-block request-action">Request</a>
+          <% } else { %>
+            <button type="button" class="btn btn-primary btn-sm btn-block request-action" disabled>Request</button>
+          <% } %>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <% if (currentUser.role !== 'staff') { %>
+    <div class="card mb-24">
+      <div class="flex justify-between items-center mb-12">
+        <h3>Notifications</h3>
+        <a href="/notifications" class="pill-link text-xs">View All <i data-lucide="arrow-right" style="width:13px;height:13px"></i></a>
+      </div>
+      <% if (notifications.length === 0) { %>
+        <div class="empty-state"><i data-lucide="bell-off"></i><h3>No notifications</h3></div>
+      <% } %>
+      <% notifications.forEach(function(n) { %>
+        <div class="flex gap-10" style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <div class="stat-icon <%= n.type === 'rejected' || n.type === 'overdue' ? 'danger' : (n.type === 'due_soon' ? 'amber' : 'success') %>" style="width:32px;height:32px;border-radius:10px;flex-shrink:0;">
+            <i data-lucide="<%= n.type === 'rejected' ? 'x-circle' : (n.type === 'overdue' ? 'alert-triangle' : (n.type === 'due_soon' ? 'clock' : 'check')) %>" style="width:16px;height:16px"></i>
+          </div>
+          <div>
+            <div class="text-sm font-semibold"><%= n.title %></div>
+            <div class="text-xs text-muted"><%= h.timeAgo(n.created_at) %></div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+    <% } %>
+
+    <div class="card mb-24">
+      <h3 class="mb-12">Quick Stats</h3>
+      <div class="grid grid-2">
+        <div><div class="stat-value" style="font-size:22px"><%= totalBorrowings %></div><div class="stat-label">Total Borrowings</div></div>
+        <div><div class="stat-value" style="font-size:22px;color:var(--success)"><%= stats.on_time_return_rate %>%</div><div class="stat-label">On-Time Return Rate</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(120deg, var(--teal) 0%, var(--teal-dark) 100%); color:#fff; border:none;">
+      <i data-lucide="quote" style="width:22px;height:22px;color:var(--amber)"></i>
+      <p style="color:#fff;font-family:'Sora',sans-serif;font-style:italic;margin-top:8px;">The right tools to support your learning journey.</p>
+      <div class="text-xs" style="color:rgba(255,255,255,0.7)">CSPC Equipment Borrowing System</div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>

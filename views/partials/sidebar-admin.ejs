@@ -1,0 +1,41 @@
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <img src="/images/logo.png" alt="CSPC Logo">
+    <div>
+      <div class="name">CSPC</div>
+      <div class="sub">Camarines Sur Polytechnic Colleges<br>Equipment Borrowing System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/admin/dashboard" class="sidebar-link <%= active === 'dashboard' ? 'active' : '' %>"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+    <a href="/admin/requests" class="sidebar-link <%= active === 'requests' ? 'active' : '' %>"><i data-lucide="inbox"></i> Requests<% if (pendingRequestCount > 0) { %><span class="badge-count" title="Pending requests"><%= pendingRequestCount %></span><% } %></a>
+    <a href="/admin/equipment" class="sidebar-link <%= active === 'equipment' ? 'active' : '' %>"><i data-lucide="package"></i> Equipment</a>
+    <a href="/equipment" class="sidebar-link <%= active === 'equipment-catalog' ? 'active' : '' %>"><i data-lucide="search"></i> Equipment Catalog</a>
+    <a href="/admin/returns" class="sidebar-link <%= active === 'returns' ? 'active' : '' %>"><i data-lucide="undo-2"></i> Returns</a>
+    <% if (currentUser && currentUser.role === 'admin') { %>
+    <a href="/notifications" class="sidebar-link <%= active === 'notifications' ? 'active' : '' %>">
+      <i data-lucide="bell"></i> Notifications
+      <% if (typeof unreadNotifications !== 'undefined' && unreadNotifications > 0) { %><span class="badge-count"><%= unreadNotifications %></span><% } %>
+    </a>
+    <% } %>
+    <% if (currentUser && ['admin', 'staff'].includes(currentUser.role)) { %>
+    <a href="/qr-scanner" class="sidebar-link <%= active === 'scanner' ? 'active' : '' %>"><i data-lucide="qr-code"></i> Pickup & Return Scanner</a>
+    <% } %>
+    <% if (currentUser && currentUser.role === 'admin') { %>
+    <a href="/admin/users" class="sidebar-link <%= active === 'users' ? 'active' : '' %>"><i data-lucide="users"></i> Users</a>
+    <% } %>
+    <a href="/admin/maintenance" class="sidebar-link <%= active === 'maintenance' ? 'active' : '' %>"><i data-lucide="wrench"></i> Maintenance</a>
+    <% if (currentUser && currentUser.role === 'admin') { %>
+    <a href="/admin/reports" class="sidebar-link <%= active === 'reports' ? 'active' : '' %>"><i data-lucide="bar-chart-3"></i> Reports</a>
+    <a href="/admin/audit-trail" class="sidebar-link <%= active === 'audit' ? 'active' : '' %>"><i data-lucide="shield-check"></i> Audit Trail</a>
+    <% } %>
+    <a href="/profile" class="sidebar-link <%= active === 'profile' ? 'active' : '' %>"><i data-lucide="user-circle"></i> Profile</a>
+    <a href="/logout" class="sidebar-link"><i data-lucide="log-out"></i> Logout</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <strong>CSPC</strong>
+    Quality Education<br>for a Brighter Future
+  </div>
+</aside>

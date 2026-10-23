@@ -1,0 +1,55 @@
+<%- include('../partials/app-open', {sidebarType: currentUser.role === 'admin' ? 'admin' : 'student'}) %>
+
+<div class="breadcrumb"><a href="<%= currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard' %>">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>Notifications</span></div>
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:10px;">
+  <div>
+    <h1>Notifications</h1>
+    <p>Stay updated on your account and equipment activity.</p>
+  </div>
+  <div class="flex gap-8">
+    <form action="/notifications/mark-all-read" method="POST">
+      <button type="submit" class="btn btn-outline btn-sm"><i data-lucide="check-check"></i> Mark All as Read</button>
+    </form>
+    <% if (items.length > 0) { %>
+      <form action="/notifications/delete-all" method="POST" onsubmit="return confirm('Delete all notifications? This cannot be undone.')">
+        <button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);"><i data-lucide="trash-2"></i> Delete All</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<div class="card" style="max-width:760px">
+  <% if (items.length === 0) { %>
+    <div class="empty-state"><i data-lucide="bell-off"></i><h3>No notifications</h3><p>You're all caught up.</p></div>
+  <% } %>
+  <% items.forEach(function(n, i) { %>
+    <div class="flex gap-12" style="padding:14px 0; <%= i < items.length - 1 ? 'border-bottom:1px solid var(--border)' : '' %>; <%= !n.is_read ? 'background:var(--teal-light); margin:0 -20px; padding-left:20px; padding-right:20px; border-radius:8px;' : '' %>">
+      <div class="stat-icon <%= n.type === 'rejected' || n.type === 'overdue' ? 'danger' : (n.type === 'due_soon' ? 'amber' : (n.type === 'maintenance' ? 'info' : 'success')) %>" style="width:38px;height:38px;border-radius:11px;flex-shrink:0;">
+        <i data-lucide="<%= n.type === 'rejected' ? 'x-circle' : (n.type === 'overdue' ? 'alert-triangle' : (n.type === 'due_soon' ? 'clock' : (n.type === 'maintenance' ? 'wrench' : 'check'))) %>" style="width:18px;height:18px"></i>
+      </div>
+      <div class="flex-1" style="flex:1;">
+        <div class="flex justify-between">
+          <div class="text-sm font-semibold"><%= n.title %></div>
+          <div class="text-xs text-muted"><%= h.timeAgo(n.created_at) %></div>
+        </div>
+        <div class="text-sm text-muted mt-8" style="margin-top:2px;"><%= n.message %></div>
+        <div class="flex items-center gap-12 mt-8">
+          <% if (!n.is_read) { %>
+            <form action="/notifications/<%= n.id %>/read" method="POST">
+              <button type="submit" class="pill-link text-xs" style="background:none;border:none;padding:0;">Mark as read</button>
+            </form>
+          <% } else { %>
+            <form action="/notifications/<%= n.id %>/unread" method="POST">
+              <button type="submit" class="pill-link text-xs" style="background:none;border:none;padding:0;">Mark as unread</button>
+            </form>
+          <% } %>
+          <form action="/notifications/<%= n.id %>/delete" method="POST">
+            <button type="submit" class="btn btn-ghost btn-sm" title="Delete notification" aria-label="Delete notification" style="color:var(--danger);padding:2px 6px;"><i data-lucide="trash-2"></i></button>
+          </form>
+        </div>
+      </div>
+    </div>
+  <% }); %>
+</div>
+
+<%- include('../partials/app-close') %>

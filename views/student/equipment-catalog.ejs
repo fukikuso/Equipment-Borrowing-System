@@ -1,0 +1,100 @@
+<%- include('../partials/app-open', {sidebarType: ['admin', 'staff'].includes(currentUser.role) ? 'admin' : 'student'}) %>
+
+<div class="breadcrumb"><a href="<%= ['admin', 'staff'].includes(currentUser.role) ? '/admin/dashboard' : '/dashboard' %>">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span>Equipment Catalog</span></div>
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1>Equipment Catalog</h1>
+    <p>Browse and find the equipment you need for your academic and campus activities.</p>
+  </div>
+  <% if (currentUser.role === 'staff') { %>
+    <a href="/qr-scanner" class="btn btn-primary"><i data-lucide="qr-code"></i> Pickup & Return Scanner</a>
+  <% } else if (currentUser.role !== 'admin') { %>
+    <a href="/request-equipment" class="btn btn-primary"><i data-lucide="plus"></i> Request Equipment</a>
+  <% } %>
+</div>
+
+<div class="category-pill-row">
+  <a href="/equipment" class="category-pill <%= filters.category === 'all' ? 'active' : '' %>"><i data-lucide="grid-2x2"></i> All (<%= allCount %>)</a>
+  <% categories.forEach(function(c) { %>
+    <a href="/equipment?category=<%= encodeURIComponent(c.name) %>" class="category-pill <%= filters.category === c.name ? 'active' : '' %>">
+      <i data-lucide="<%= c.icon || 'box' %>"></i> <%= c.name %> (<%= c.count %>)
+    </a>
+  <% }); %>
+</div>
+
+<div>
+
+    <% if (!hasSearched && !hasFilters) { %>
+      <div class="card empty-state"><i data-lucide="search"></i><h3>Search equipment</h3><p>Enter an equipment name, code, or brand to see matching results.</p></div>
+    <% } else if (items.length === 0) { %>
+      <div class="card empty-state"><i data-lucide="package-x"></i><h3>No equipment found</h3><p>Try adjusting your filters or search terms.</p></div>
+    <% } else { %>
+      <div class="grid equipment-grid mb-16">
+        <% items.forEach(function(e) { %>
+        <div class="card equip-card">
+          <div class="thumb">
+            <% if (e.catalogImage) { %>
+              <img class="category-photo" src="<%= e.catalogImage %>" alt="<%= e.name %>" loading="lazy">
+            <% } else { %>
+              <i data-lucide="<%= e.category_icon || 'box' %>"></i>
+            <% } %>
+            <span class="badge <%= e.maintenance_status !== 'Operational' ? 'badge-danger' : (e.quantity_available > 0 ? 'badge-success' : 'badge-warning') %>">
+              <%= e.maintenance_status !== 'Operational' ? e.maintenance_status : (e.quantity_available > 0 ? 'Available' : 'Fully Borrowed') %>
+            </span>
+          </div>
+          <div class="body">
+            <div class="name"><%= e.name %></div>
+            <div class="meta"><i data-lucide="hash" style="width:12px;height:12px"></i> <%= e.equipment_code %></div>
+            <div class="meta"><i data-lucide="tag" style="width:12px;height:12px"></i> <%= e.category_name || 'Uncategorized' %></div>
+            <div class="meta"><i data-lucide="map-pin" style="width:12px;height:12px"></i> <%= e.location %></div>
+            <div class="qty"><i data-lucide="check-circle" style="width:12px;height:12px"></i> <%= e.quantity_available %> available / <%= e.quantity_total %> total</div>
+          </div>
+          <div class="actions">
+            <a href="/equipment/<%= e.id %>" class="btn btn-outline">View Details</a>
+            <% if (currentUser.role === 'staff') { %>
+              <a href="/qr-scanner" class="btn btn-outline">Scan QR</a>
+            <% } else if (currentUser.role !== 'admin' && e.quantity_available > 0 && e.maintenance_status === 'Operational') { %>
+              <a href="/request-equipment?equipment=<%= e.id %>" class="btn btn-primary">Request</a>
+            <% } else if (currentUser.role !== 'admin') { %>
+              <button class="btn btn-primary" disabled>Request</button>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+
+      <% if (pagination.totalPages > 1) { %>
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-muted">Showing <%= (pagination.page - 1) * pagination.perPage + 1 %>–<%= Math.min(pagination.page * pagination.perPage, pagination.total) %> of <%= pagination.total %> equipment</div>
+        <div class="flex gap-8">
+          <% for (let p = 1; p <= pagination.totalPages; p++) { %>
+            <a href="/equipment?<%= new URLSearchParams({...filters, page: p}).toString() %>" class="btn btn-sm <%= p === pagination.page ? 'btn-primary' : 'btn-outline' %>" style="min-width:36px;padding:8px;"><%= p %></a>
+          <% } %>
+        </div>
+      </div>
+      <% } %>
+    <% } %>
+
+    <button id="backToTopBtn" type="button" class="btn btn-primary btn-sm" style="display:none; position:fixed; right:26px; bottom:26px; z-index:80; box-shadow:0 12px 32px rgba(23,74,139,0.18);">Back to Top</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const backToTopBtn = document.getElementById('backToTopBtn');
+    if (!backToTopBtn) return;
+
+    const toggleButton = () => {
+      const shouldShow = window.scrollY > 260;
+      backToTopBtn.style.display = shouldShow ? 'inline-flex' : 'none';
+    };
+
+    window.addEventListener('scroll', toggleButton, { passive: true });
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    toggleButton();
+  })();
+</script>
+
+<%- include('../partials/app-close') %>

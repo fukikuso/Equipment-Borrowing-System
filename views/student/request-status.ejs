@@ -1,0 +1,83 @@
+<%- include('../partials/app-open', {sidebarType: 'student'}) %>
+
+<div class="breadcrumb"><a href="/dashboard">Home</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <a href="/my-borrowings">My Borrowings</a> <i data-lucide="chevron-right" style="width:13px;height:13px"></i> <span><%= request.request_code %></span></div>
+
+<div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:10px;">
+  <div>
+    <h1>Request <%= request.request_code %></h1>
+    <p><%= request.equipment_name %> (<%= request.equipment_code %>)</p>
+  </div>
+  <span class="badge <%= h.badgeClass(request.status) %>" style="font-size:13px;padding:6px 14px;"><%= h.statusLabel(request.status) %></span>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 1.2fr; align-items:start;">
+  <div class="card">
+    <h3 class="mb-16">Request Details</h3>
+    <div class="text-sm">
+      <div class="mb-12"><span class="text-muted">Purpose</span><br><strong><%= request.purpose %></strong></div>
+      <div class="mb-12"><span class="text-muted">Quantity</span><br><strong><%= request.quantity %> unit(s)</strong></div>
+      <div class="mb-12"><span class="text-muted">Date Needed</span><br><strong><%= h.formatDate(request.date_needed) %> <%= request.time_needed ? h.formatTime('1970-01-01T' + request.time_needed) : '' %></strong></div>
+      <div class="mb-12"><span class="text-muted">Expected Return</span><br><strong><%= h.formatDate(request.expected_return_date) %> <%= request.expected_return_time ? h.formatTime('1970-01-01T' + request.expected_return_time) : '' %></strong></div>
+      <% if (request.activity_event) { %><div class="mb-12"><span class="text-muted">Activity / Event</span><br><strong><%= request.activity_event %></strong></div><% } %>
+      <% if (request.department_program) { %><div class="mb-12"><span class="text-muted">Department / Program</span><br><strong><%= request.department_program %></strong></div><% } %>
+      <% if (request.supporting_document) { %><div class="mb-12"><span class="text-muted">Supporting Document</span><br><a href="<%= request.supporting_document %>" target="_blank" class="pill-link">View Document <i data-lucide="external-link" style="width:13px;height:13px"></i></a></div><% } %>
+    </div>
+
+    <% if (request.status === 'ready_for_pickup') { %>
+      <a href="/borrowings/<%= request.id %>/qr" class="btn btn-primary btn-block mt-16"><i data-lucide="qr-code"></i> View QR Code</a>
+    <% } %>
+
+    <% if (request.status === 'rejected') { %>
+      <div class="alert alert-error mt-16" style="margin-bottom:0"><i data-lucide="x-circle"></i><span><strong>Rejection reason:</strong> <%= request.rejection_reason %></span></div>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-16">Status Timeline</h3>
+    <% if (request.status === 'rejected') { %>
+      <div class="timeline">
+        <div class="timeline-step done">
+          <div><div class="timeline-dot"><i data-lucide="check"></i></div><div class="timeline-line"></div></div>
+          <div class="timeline-content"><div class="t-title">Request Submitted</div><div class="t-time"><%= h.formatDateTime(request.created_at) %></div></div>
+        </div>
+        <div class="timeline-step rejected">
+          <div><div class="timeline-dot"><i data-lucide="x"></i></div></div>
+          <div class="timeline-content"><div class="t-title">Rejected</div><div class="t-time"><%= h.formatDateTime(request.reviewed_at) %></div></div>
+        </div>
+      </div>
+    <% } else {
+      const order = ['submitted','under_review','approved','ready_for_pickup','borrowed','returned','completed'];
+      const labels = { submitted: 'Request Submitted', under_review: 'Under Review', approved: 'Approved', ready_for_pickup: 'Ready for Pickup', borrowed: 'Borrowed', returned: 'Returned', completed: 'Completed' };
+      let statusIndex = order.indexOf(request.status);
+      if (['borrowed'].includes(request.status) && borrowing && ['returned'].includes(borrowing.status)) statusIndex = order.indexOf('completed');
+      const steps = ['submitted','ready_for_pickup','borrowed','completed'];
+    %>
+      <div class="timeline">
+        <% steps.forEach(function(s, i) {
+          const stepIdx = order.indexOf(s);
+          const isDone = stepIdx < statusIndex || request.status === s || (s === 'completed' && request.status === 'completed');
+          const isCurrent = request.status === s;
+        %>
+        <div class="timeline-step <%= (stepIdx <= statusIndex) ? 'done' : (isCurrent ? 'current' : '') %>">
+          <div>
+            <div class="timeline-dot"><i data-lucide="<%= stepIdx <= statusIndex ? 'check' : 'circle' %>"></i></div>
+            <% if (i < steps.length - 1) { %><div class="timeline-line"></div><% } %>
+          </div>
+          <div class="timeline-content">
+            <div class="t-title"><%= labels[s] %></div>
+            <div class="t-time">
+              <% if (s === 'submitted') { %><%= h.formatDateTime(request.created_at) %>
+              <% } else if (s === 'ready_for_pickup' && request.ready_at) { %><%= h.formatDateTime(request.ready_at) %>
+              <% } else if (s === 'borrowed' && borrowing && borrowing.borrow_date) { %><%= h.formatDateTime(borrowing.borrow_date) %>
+              <% } else if (s === 'completed' && borrowing && borrowing.return_date) { %><%= h.formatDateTime(borrowing.return_date) %>
+              <% } else { %>—<% } %>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/app-close') %>
