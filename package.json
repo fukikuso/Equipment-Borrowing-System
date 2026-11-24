@@ -18,6 +18,7 @@
     "dotenv": "^16.4.5",
     "ejs": "^3.1.9",
     "express": "^4.19.2",
+    "express-mysql-session": "^3.0.3",
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.0",
     "method-override": "^3.0.0",
@@ -28,5 +29,10 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
+  },
+  "overrides": {
+    "express-mysql-session": {
+      "mysql2": "3.24.4"
+    }
   }
 }

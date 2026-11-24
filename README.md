@@ -46,11 +46,21 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-The defaults already match a stock XAMPP install (`root` user, no
-password, port `3306`). Only edit `.env` if your XAMPP MySQL uses a
-different user/password/port. To enable password resets, also configure
-`APP_BASE_URL` and the `SMTP_*` values. For Gmail, use an App Password
-instead of your regular account password. Do not commit `.env`.
+The database defaults match a stock local XAMPP install (`root` user, no
+password, port `3306`). Replace the sample `SESSION_SECRET` with a random
+value; for example, run
+`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+To enable password resets, also configure `APP_BASE_URL` and the `SMTP_*`
+values. For Gmail, use an App Password instead of your regular account
+password. Do not commit `.env`.
+
+For production, set `NODE_ENV=production` and configure `DB_HOST`,
+`DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and a newly generated
+`SESSION_SECRET` in the hosting dashboard. Use a non-root database user.
+The MySQL pool then requires TLS, limits connections to five, and the
+session store keeps sessions in MySQL's `sessions` table. The database user
+needs permission to create and use that table. Set `DB_SSL_CA` only if the
+database provider supplies a CA certificate.
 
 ### Step 4 — Install dependencies
 

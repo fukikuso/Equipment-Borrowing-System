@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const flash = require('connect-flash');
 const methodOverride = require('method-override');
 
@@ -12,6 +13,11 @@ const studentRoutes = require('./routes/studentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET must be set in the environment.');
+}
 
 // ---------------------------------------------------------------------------
 // View engine
@@ -22,16 +28,30 @@ app.set('views', path.join(__dirname, 'views'));
 // ---------------------------------------------------------------------------
 // Core middleware
 // ---------------------------------------------------------------------------
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+const sessionStore = new MySQLStore({
+  clearExpired: true,
+  checkExpirationInterval: 15 * 60 * 1000,
+  expiration: 8 * 60 * 60 * 1000
+}, db);
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'cspc-ebs-secret',
+  secret: process.env.SESSION_SECRET,
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 8 * 60 * 60 * 1000 } // 8 hours by default; extended on "remember me"
+  cookie: {
+    maxAge: 8 * 60 * 60 * 1000,
+    secure: isProduction
+  }
 }));
 app.use(flash());
 
@@ -80,6 +100,10 @@ app.get('/', (req, res) => {
     return res.redirect(req.session.user.role === 'admin' || req.session.user.role === 'staff' ? '/admin/dashboard' : '/dashboard');
   }
   res.redirect('/login');
+});
+
+app.get('/healthz', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 app.use('/', authRoutes);
@@ -184,6 +208,11 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`CSPC Equipment Borrowing System running at http://localhost:${PORT}`);
+sessionStore.onReady().then(() => {
+  app.listen(PORT, () => {
+    console.log(`CSPC Equipment Borrowing System listening on port ${PORT}`);
+  });
+}).catch((err) => {
+  console.error('[Session Store Error] Could not initialize the MySQL session store:', err);
+  process.exit(1);
 });

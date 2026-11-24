@@ -1,6 +1,20 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  const missingVariables = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME']
+    .filter((name) => !process.env[name]);
+
+  if (missingVariables.length) {
+    throw new Error(`Missing production database environment variables: ${missingVariables.join(', ')}`);
+  }
+  if (process.env.DB_USER.toLowerCase() === 'root') {
+    throw new Error('Production database connections must use a non-root DB_USER.');
+  }
+}
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   port: process.env.DB_PORT || 3306,
@@ -8,9 +22,15 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'cspc_ebs',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 5,
   queueLimit: 0,
-  dateStrings: true
+  dateStrings: true,
+  ssl: isProduction
+    ? {
+        rejectUnauthorized: true,
+        ca: process.env.DB_SSL_CA || undefined
+      }
+    : undefined
 });
 
 // Quick sanity check on boot so setup mistakes fail loudly and clearly.

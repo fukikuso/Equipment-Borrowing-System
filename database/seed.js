@@ -15,13 +15,20 @@ const fs = require('fs');
 const path = require('path');
 
 async function main() {
+  const isProduction = process.env.NODE_ENV === 'production';
   const conn = await mysql.createConnection({
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'cspc_ebs',
-    multipleStatements: true
+    multipleStatements: true,
+    ssl: isProduction
+      ? {
+          rejectUnauthorized: true,
+          ca: process.env.DB_SSL_CA || undefined
+        }
+      : undefined
   });
 
   console.log('Clearing existing data...');
