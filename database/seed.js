@@ -25,7 +25,7 @@ async function main() {
     multipleStatements: true,
     ssl: isProduction
       ? {
-          rejectUnauthorized: true,
+          rejectUnauthorized: false,
           ca: process.env.DB_SSL_CA || undefined
         }
       : undefined
